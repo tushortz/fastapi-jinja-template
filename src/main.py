@@ -12,7 +12,6 @@ from fastapi.templating import Jinja2Templates
 from starlette.status import HTTP_422_UNPROCESSABLE_ENTITY
 
 from src.api.admin import router as admin_router
-from src.api.ai import router as ai_router
 from src.api.auth import router as auth_router
 from src.api.image_converter import router as image_converter_router
 from src.config import setup_logging
@@ -63,7 +62,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Project API",
-    description="A FastAPI application for saving and managing quotes from books",
+    description="A FastAPI application",
     version="1.0.0",
     lifespan=lifespan,
 )
@@ -83,7 +82,6 @@ app.add_middleware(
 # Include routers
 logger.info("Registering API routers")
 app.include_router(auth_router)
-app.include_router(ai_router)
 app.include_router(admin_router)
 app.include_router(image_converter_router)
 app.include_router(web_router)
@@ -115,5 +113,4 @@ async def health_check():
 
 
 if __name__ == "__main__":
-
     uvicorn.run(app, host="0.0.0.0", port=8000)

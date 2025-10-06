@@ -123,8 +123,6 @@
   // Load stats
   document.addEventListener('alpine:init', () => {
     Alpine.data('stats', () => ({
-      totalQuotes: 0,
-      totalBooks: 0,
       thisMonth: 0,
 
       async init() {
@@ -133,13 +131,11 @@
 
       async loadStats() {
         try {
-          // Get total count of user's quotes
           const countResponse = await apiCall('#');
 
           if (countResponse.ok) {
             const countData = await countResponse.json();
           } else {
-            // console.error('Failed to load quote count:', countResponse.status);
           }
         } catch (error) {
           // console.error('Error loading stats:', error);

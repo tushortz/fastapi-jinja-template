@@ -58,11 +58,11 @@ class BaseRepository:
         # Add search functionality if search term provided
         if search:
             # This is a basic text search - can be enhanced with MongoDB text indexes
-            # For books, search in title, author, and description
+            # Modify according to the fields in the model
             filter_dict["$or"] = [
-                {"title": {"$regex": search, "$options": "i"}},
-                {"author": {"$regex": search, "$options": "i"}},
-                {"description": {"$regex": search, "$options": "i"}},
+                {"field1": {"$regex": search, "$options": "i"}},
+                {"field2": {"$regex": search, "$options": "i"}},
+                {"field3": {"$regex": search, "$options": "i"}},
             ]
 
         # Determine sort direction

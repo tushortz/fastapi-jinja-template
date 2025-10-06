@@ -1,11 +1,10 @@
 # [Project name]
 
-A FastAPI-based web application for saving and managing quotes from books. Built with MongoDB as the backend database and featuring a modern web UI.
+A FastAPI-based web application starter temmplate supporting mongodb backend and ttailwind css
 
 ## Features
 
 -   **User Authentication**: Registration and login with JWT tokens
--   **Search Functionality**: Find quotes and books quickly
 -   **Admin Panel**: Manage users and view system statistics
 -   **Responsive UI**: Modern, mobile-friendly interface using Tailwind CSS
 
@@ -21,8 +20,65 @@ A FastAPI-based web application for saving and managing quotes from books. Built
 ## Project Structure
 
 ```
-
+project-template/
+├── env/                          # Virtual environment
+├── src/                          # Main application source code
+│   ├── api/                      # API endpoints
+│   │   ├── admin.py             # Admin API routes
+│   │   ├── auth.py              # Authentication API routes
+│   │   └── image_converter.py   # Image conversion API
+│   ├── models/                   # Database models
+│   │   ├── base.py              # Base model class
+│   │   └── users.py             # User model
+│   ├── repositories/             # Data access layer
+│   │   ├── base.py              # Base repository class
+│   │   └── users.py             # User repository
+│   ├── services/                 # Business logic layer
+│   │   ├── users.py             # User service
+│   │   └── tagging/             # Tagging services
+│   │       ├── base.py          # Base tagging service
+│   │       ├── gemini.py        # Gemini AI tagging
+│   │       └── local_ai.py      # Local AI tagging
+│   ├── templates/                # Jinja2 HTML templates
+│   │   ├── admin/               # Admin panel templates
+│   │   │   ├── dashboard.html
+│   │   │   └── users.html
+│   │   ├── auth/                # Authentication templates
+│   │   │   ├── login.html
+│   │   │   ├── profile.html
+│   │   │   └── register.html
+│   │   ├── components/          # Reusable components
+│   │   │   └── modal.html
+│   │   ├── dashboard/           # Dashboard templates
+│   │   │   └── dashboard.html
+│   │   ├── base.html            # Base template
+│   │   └── landing.html         # Landing page
+│   ├── tests/                    # Test suite
+│   │   ├── factories/           # Test data factories
+│   │   │   ├── base.py
+│   │   │   └── user.py
+│   │   ├── conftest.py          # Pytest configuration
+│   │   ├── test_api.py          # API tests
+│   │   ├── test_models.py       # Model tests
+│   │   ├── test_repositories.py # Repository tests
+│   │   └── test_services.py     # Service tests
+│   ├── static/                   # Static assets
+│   │   └── css/
+│   │       └── custom.css       # Custom CSS styles
+│   ├── utils/                    # Utility functions
+│   │   └── date.py              # Date utilities
+│   ├── auth.py                   # Authentication utilities
+│   ├── config.py                 # Application configuration
+│   ├── database.py               # Database connection
+│   ├── main.py                   # FastAPI application entry point
+│   ├── scripts.py                # Utility scripts
+│   └── web_routes.py             # Web route handlers
+├── env.example                   # Environment variables template
+├── poetry.lock                   # Poetry lock file
+├── pyproject.toml               # Project configuration
+└── README.md                     # Project documentation
 ```
+
 
 ## Installation
 
@@ -30,7 +86,7 @@ A FastAPI-based web application for saving and managing quotes from books. Built
 
     ```bash
     git clone <repository-url>
-    cd quote
+    cd <repo>
     ```
 
 2. **Install Poetry** (if not already installed):

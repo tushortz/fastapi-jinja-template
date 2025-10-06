@@ -11,8 +11,8 @@ class Settings(BaseSettings):
     """Application settings."""
 
     mongodb_url: str = "mongodb://localhost:27017"
-    database_name: str = "quote_saver"
-    test_database_name: str = "quote_saver_test"
+    database_name: str = "project_db"
+    test_database_name: str = "project_db_test"
     secret_key: str = "your-secret-key-here-change-in-production"
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 60 * 24  # 24 hours

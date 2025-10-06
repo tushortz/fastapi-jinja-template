@@ -24,14 +24,12 @@ class GeminiTagService:
             self.model = None
             logger.warning("Gemini not available (missing package or API key)")
 
-    async def generate_tags(
-        self, quote_text: str, book_title: str | None = None
-    ) -> list[str]:
+    async def generate_tags(self, text: str, title: str | None = None) -> list[str]:
         """Generate tags using Gemini."""
         if not self.model:
             return []
 
-        prompt = self._build_prompt(quote_text, book_title)
+        prompt = self._build_prompt(text, title)
         try:
             response = self.model.generate_content(prompt)
             content = response.text or ""
@@ -41,14 +39,14 @@ class GeminiTagService:
             logger.error("Gemini tagging failed: %s", str(exc))
             return []
 
-    def _build_prompt(self, quote_text: str, book_title: str | None) -> str:
-        context = f"Book: {book_title}\n" if book_title else ""
+    def _build_prompt(self, text: str, title: str | None) -> str:
+        context = f"Title: {title}\n" if title else ""
         return (
-            "Analyze this quote and generate 3-5 relevant tags. Tags should be:\n"
+            "Analyze this text and generate 3-5 relevant tags. Tags should be:\n"
             "- Single words or short phrases (max 2 words)\n"
             "- Lowercase only\n"
-            "- Relevant to the quote's theme, emotion, or subject\n"
+            "- Relevant to the text's theme, emotion, or subject\n"
             "- General enough to be useful for categorization\n\n"
-            f'{context}Quote: "{quote_text}"\n'
+            f'{context}Text: "{text}"\n'
             "Return only the tags, separated by commas, no other text."
         )

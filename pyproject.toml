@@ -4,8 +4,8 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "project-template"
-version = "0.1.0"
-description = "A FastAPI-based web application for saving and managing quotes from books"
+version = "0.0.1"
+description = "A FastAPI-based web application for saving and managing projects"
 authors = ["Your Name <your.email@example.com>"]
 readme = "README.md"
 packages = [{ include = "src" }]

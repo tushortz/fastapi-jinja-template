@@ -17,16 +17,16 @@ class LocalTagService:
         self.base_url = settings.local_ai_url.rstrip("/")
         logger.info("Local AI model configured")
 
-    async def generate_tags(
-        self, quote_text: str, book_title: str | None = None
-    ) -> list[str]:
+    async def generate_tags(self, text: str, title: str | None = None) -> list[str]:
         """Generate tags using local API."""
         system_prompt = (
-            "You generate 3-5 concise, lowercase tags (max 2 words each) that categorize a quote by "
+            "You generate 3-5 concise, lowercase tags (max 2 words each) that categorize a text by "
             "theme, emotion, or subject. Return tags separated by commas only."
         )
-        context = f"Book: {book_title}\n" if book_title else ""
-        user_prompt = f'{context}Quote: "{quote_text}"\nReturn only the tags, separated by commas.'
+        context = f"Title: {title}\n" if title else ""
+        user_prompt = (
+            f'{context}Text: "{text}"\nReturn only the tags, separated by commas.'
+        )
 
         payload = {
             "model": settings.local_ai_model,
