@@ -12,8 +12,11 @@ from fastapi.templating import Jinja2Templates
 from starlette.status import HTTP_422_UNPROCESSABLE_ENTITY
 
 from src.api.admin import router as admin_router
+from src.api.attendance import router as attendance_router
 from src.api.auth import router as auth_router
+from src.api.events import router as events_router
 from src.api.image_converter import router as image_converter_router
+from src.api.members import router as members_router
 from src.config import setup_logging
 from src.database import close_mongo_connection, connect_to_mongo
 from src.web_routes import router as web_router
@@ -84,6 +87,9 @@ logger.info("Registering API routers")
 app.include_router(auth_router)
 app.include_router(admin_router)
 app.include_router(image_converter_router)
+app.include_router(members_router)
+app.include_router(attendance_router)
+app.include_router(events_router)
 app.include_router(web_router)
 logger.info("All routers registered successfully")
 

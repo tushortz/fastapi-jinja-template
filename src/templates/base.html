@@ -4,7 +4,7 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Project name{% endblock %}</title>
+    <title>{% block title %}Church Management System{% endblock %}</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -16,60 +16,262 @@
   </head>
 
   <body class="bg-gray-50 min-h-screen">
-    <!-- Navigation -->
-    <nav class="bg-white shadow-lg">
-      <div class="max-w-7xl mx-auto px-4">
-        <div class="flex justify-between h-16">
-          <div class="flex items-center">
-            <a href="{{ url_for('home') }}" class="flex items-center space-x-2">
-              <i class="fas fa-quote-left text-blue-600 text-2xl"></i>
-              <span class="text-xl font-bold text-gray-800">Project</span>
-            </a>
+    {% if user %}
+    <!-- Sidebar Navigation -->
+    <div class="flex h-screen bg-gray-50" x-data="{ sidebarOpen: false }">
+      <!-- Sidebar -->
+      <div class="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0"
+           :class="{ '-translate-x-full': !sidebarOpen, 'translate-x-0': sidebarOpen }">
+        <!-- Sidebar Header -->
+        <div class="flex items-center justify-between h-16 px-6 border-b border-gray-200">
+          <div class="flex items-center space-x-2">
+            <i class="fas fa-church text-blue-600 text-2xl"></i>
+            <span class="text-xl font-bold text-gray-800">ChurchMS</span>
           </div>
-          <div class="flex items-center space-x-4">
-            {% if user %}
-            {% if user.is_admin and user.is_active %}
-            <a href="{{ url_for('admin_dashboard') }}"
-              class="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
-              <i class="fas fa-cog mr-1"></i>Admin
+          <button @click="sidebarOpen = false" class="lg:hidden">
+            <i class="fas fa-times text-gray-500"></i>
+          </button>
+        </div>
+
+        <!-- Navigation Menu -->
+        <nav class="mt-6 px-3">
+          <div class="space-y-1">
+            <!-- Dashboard -->
+            <a href="{{ url_for('dashboard') }}"
+               class="group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200
+                      {% if request.url.path == '/ui/dashboard' %}bg-blue-100 text-blue-700 border-r-2 border-blue-500
+                      {% else %}text-gray-700 hover:bg-gray-100 hover:text-gray-900{% endif %}">
+              <i class="fas fa-tachometer-alt mr-3 text-lg"></i>
+              Dashboard
             </a>
+
+            <!-- Members -->
+            <div class="space-y-1">
+              <a href="{{ url_for('members_dashboard') }}"
+                 class="group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200
+                        {% if '/members' in request.url.path %}bg-blue-100 text-blue-700 border-r-2 border-blue-500
+                        {% else %}text-gray-700 hover:bg-gray-100 hover:text-gray-900{% endif %}">
+                <i class="fas fa-users mr-3 text-lg"></i>
+                Members
+              </a>
+              <div class="ml-6 space-y-1">
+                <a href="{{ url_for('members_dashboard') }}"
+                   class="block px-3 py-2 text-xs font-medium text-gray-500 hover:text-gray-700 rounded-md">
+                  Overview
+                </a>
+                <a href="{{ url_for('members_list') }}"
+                   class="block px-3 py-2 text-xs font-medium text-gray-500 hover:text-gray-700 rounded-md">
+                  All Members
+                </a>
+                <a href="{{ url_for('create_member_form') }}"
+                   class="block px-3 py-2 text-xs font-medium text-gray-500 hover:text-gray-700 rounded-md">
+                  Add Member
+                </a>
+              </div>
+            </div>
+
+            <!-- Attendance -->
+            <div class="space-y-1">
+              <a href="{{ url_for('attendance_dashboard') }}"
+                 class="group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200
+                        {% if '/attendance' in request.url.path %}bg-blue-100 text-blue-700 border-r-2 border-blue-500
+                        {% else %}text-gray-700 hover:bg-gray-100 hover:text-gray-900{% endif %}">
+                <i class="fas fa-clipboard-check mr-3 text-lg"></i>
+                Attendance
+              </a>
+              <div class="ml-6 space-y-1">
+                <a href="{{ url_for('attendance_dashboard') }}"
+                   class="block px-3 py-2 text-xs font-medium text-gray-500 hover:text-gray-700 rounded-md">
+                  Overview
+                </a>
+                <a href="{{ url_for('attendance_list') }}"
+                   class="block px-3 py-2 text-xs font-medium text-gray-500 hover:text-gray-700 rounded-md">
+                  All Records
+                </a>
+                <a href="{{ url_for('create_attendance_form') }}"
+                   class="block px-3 py-2 text-xs font-medium text-gray-500 hover:text-gray-700 rounded-md">
+                  Record Attendance
+                </a>
+              </div>
+            </div>
+
+            <!-- Events -->
+            <div class="space-y-1">
+              <a href="{{ url_for('events_dashboard') }}"
+                 class="group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200
+                        {% if '/events' in request.url.path %}bg-blue-100 text-blue-700 border-r-2 border-blue-500
+                        {% else %}text-gray-700 hover:bg-gray-100 hover:text-gray-900{% endif %}">
+                <i class="fas fa-calendar mr-3 text-lg"></i>
+                Events
+              </a>
+              <div class="ml-6 space-y-1">
+                <a href="{{ url_for('events_dashboard') }}"
+                   class="block px-3 py-2 text-xs font-medium text-gray-500 hover:text-gray-700 rounded-md">
+                  Overview
+                </a>
+                <a href="{{ url_for('events_list') }}"
+                   class="block px-3 py-2 text-xs font-medium text-gray-500 hover:text-gray-700 rounded-md">
+                  All Events
+                </a>
+                <a href="{{ url_for('create_event_form') }}"
+                   class="block px-3 py-2 text-xs font-medium text-gray-500 hover:text-gray-700 rounded-md">
+                  Add Event
+                </a>
+                <a href="{{ url_for('calendars_list') }}"
+                   class="block px-3 py-2 text-xs font-medium text-gray-500 hover:text-gray-700 rounded-md">
+                  Calendars
+                </a>
+              </div>
+            </div>
+
+            <!-- Admin Section -->
+            {% if user.is_admin and user.is_active %}
+            <div class="pt-4 mt-4 border-t border-gray-200">
+              <div class="space-y-1">
+                <a href="{{ url_for('admin_dashboard') }}"
+                   class="group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200
+                          {% if '/admin' in request.url.path %}bg-red-100 text-red-700 border-r-2 border-red-500
+                          {% else %}text-gray-700 hover:bg-gray-100 hover:text-gray-900{% endif %}">
+                  <i class="fas fa-cog mr-3 text-lg"></i>
+                  Administration
+                </a>
+                <div class="ml-6 space-y-1">
+                  <a href="{{ url_for('admin_dashboard') }}"
+                     class="block px-3 py-2 text-xs font-medium text-gray-500 hover:text-gray-700 rounded-md">
+                    Dashboard
+                  </a>
+                  <a href="{{ url_for('admin_users') }}"
+                     class="block px-3 py-2 text-xs font-medium text-gray-500 hover:text-gray-700 rounded-md">
+                    User Management
+                  </a>
+                </div>
+              </div>
+            </div>
             {% endif %}
-            <div class="relative" x-data="{ open: false }">
-              <button @click="open = !open"
-                class="flex items-center text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
-                <i class="fas fa-user mr-1"></i>{{ user.username }}
-                <i class="fas fa-chevron-down ml-1"></i>
+          </div>
+        </nav>
+
+        <!-- User Profile Section -->
+        <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
+          <div class="flex items-center space-x-3">
+            <div class="flex-shrink-0">
+              <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                <i class="fas fa-user text-white text-sm"></i>
+              </div>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-gray-900 truncate">{{ user.username }}</p>
+              <p class="text-xs text-gray-500 truncate">
+                {% if user.is_admin %}Administrator{% else %}Member{% endif %}
+              </p>
+            </div>
+            <div class="flex-shrink-0" x-data="{ open: false }">
+              <button @click="open = !open" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-ellipsis-v"></i>
               </button>
               <div x-show="open" @click.away="open = false"
-                class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
-                <a href="{{ url_for('profile') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                   class="absolute bottom-full right-0 mb-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
+                <a href="{{ url_for('profile') }}"
+                   class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                   <i class="fas fa-user-edit mr-2"></i>Profile
                 </a>
                 <button onclick="logout()" type="button"
-                  class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                        class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                   <i class="fas fa-sign-out-alt mr-2"></i>Logout
                 </button>
               </div>
             </div>
-            {% else %}
-            <a href="{{ url_for('login') }}"
-              class="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
-              <i class="fas fa-sign-in-alt mr-1"></i>Login
-            </a>
-            <a href="{{ url_for('register') }}"
-              class="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700">
-              <i class="fas fa-user-plus mr-1"></i>Register
-            </a>
-            {% endif %}
           </div>
         </div>
       </div>
-    </nav>
 
-    <!-- Main Content -->
-    <main class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-      {% block content %}{% endblock %}
-    </main>
+      <!-- Mobile sidebar overlay -->
+      <div x-show="sidebarOpen" @click="sidebarOpen = false"
+           class="fixed inset-0 z-40 bg-gray-600 bg-opacity-75 lg:hidden"
+           x-transition:enter="transition-opacity ease-linear duration-300"
+           x-transition:enter-start="opacity-0"
+           x-transition:enter-end="opacity-100"
+           x-transition:leave="transition-opacity ease-linear duration-300"
+           x-transition:leave-start="opacity-100"
+           x-transition:leave-end="opacity-0"></div>
+
+      <!-- Main Content Area -->
+      <div class="flex-1 flex flex-col overflow-hidden lg:ml-0">
+        <!-- Top Header -->
+        <header class="bg-white shadow-sm border-b border-gray-200">
+          <div class="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center">
+              <button @click="sidebarOpen = true" class="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100">
+                <i class="fas fa-bars text-lg"></i>
+              </button>
+              <h1 class="ml-2 lg:ml-0 text-xl font-semibold text-gray-900">
+                {% block page_title %}Dashboard{% endblock %}
+              </h1>
+            </div>
+            <div class="flex items-center space-x-4">
+              <!-- Notifications -->
+              <button class="p-2 text-gray-400 hover:text-gray-500 hover:bg-gray-100 rounded-md">
+                <i class="fas fa-bell text-lg"></i>
+              </button>
+              <!-- Quick Actions -->
+              <div class="hidden md:flex items-center space-x-2">
+                <a href="{{ url_for('create_member_form') }}"
+                   class="bg-blue-600 text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors">
+                  <i class="fas fa-user-plus mr-1"></i>Add Member
+                </a>
+                <a href="{{ url_for('create_event_form') }}"
+                   class="bg-purple-600 text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-purple-700 transition-colors">
+                  <i class="fas fa-calendar-plus mr-1"></i>Add Event
+                </a>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <!-- Page Content -->
+        <main class="flex-1 overflow-y-auto">
+          <div class="py-6">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              {% block content %}{% endblock %}
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    {% else %}
+    <!-- Landing Page Layout (No Sidebar) -->
+    <div class="min-h-screen bg-gray-50">
+      <!-- Top Navigation for Landing Page -->
+      <nav class="bg-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4">
+          <div class="flex justify-between h-16">
+            <div class="flex items-center">
+              <a href="{{ url_for('home') }}" class="flex items-center space-x-2">
+                <i class="fas fa-church text-blue-600 text-2xl"></i>
+                <span class="text-xl font-bold text-gray-800">ChurchMS</span>
+              </a>
+            </div>
+            <div class="flex items-center space-x-4">
+              <a href="{{ url_for('login') }}"
+                 class="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
+                <i class="fas fa-sign-in-alt mr-1"></i>Login
+              </a>
+              <a href="{{ url_for('register') }}"
+                 class="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700">
+                <i class="fas fa-user-plus mr-1"></i>Register
+              </a>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      <!-- Main Content -->
+      <main class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+        {{ self.content() }}
+      </main>
+    </div>
+    {% endif %}
 
     <!-- Flash Messages -->
     {% if messages %}

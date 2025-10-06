@@ -7,9 +7,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from src.auth import (
-    get_current_user_from_cookie,
-    require_active_user,
-    require_admin_user,
+    get_current_user_from_cookie, require_active_user, require_admin_user,
 )
 
 logger = logging.getLogger(__name__)
@@ -131,3 +129,25 @@ async def profile_page(request: Request):
     return templates.TemplateResponse(
         "auth/profile.html", {"request": request, "user": current_user}
     )
+
+
+# Church Management Routes
+@router.get("/members", response_class=HTMLResponse, name="members_dashboard")
+@require_active_user
+async def members_dashboard_redirect(request: Request):
+    """Redirect to members dashboard."""
+    return RedirectResponse(url="/members/dashboard")
+
+
+@router.get("/attendance", response_class=HTMLResponse, name="attendance_dashboard")
+@require_active_user
+async def attendance_dashboard_redirect(request: Request):
+    """Redirect to attendance dashboard."""
+    return RedirectResponse(url="/attendance/dashboard")
+
+
+@router.get("/events", response_class=HTMLResponse, name="events_dashboard")
+@require_active_user
+async def events_dashboard_redirect(request: Request):
+    """Redirect to events dashboard."""
+    return RedirectResponse(url="/events/dashboard")
