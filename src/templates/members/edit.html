@@ -27,15 +27,11 @@
                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
           </div>
           <div>
-            <label for="last_name" class="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
-            <input type="text" id="last_name" name="last_name" value="{{ member.last_name }}" required
+            <label for="last_name" class="block text-sm font-medium text-gray-700 mb-1">Last Name (optional)</label>
+            <input type="text" id="last_name" name="last_name" value="{{ member.last_name or '' }}"
                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
           </div>
-          <div>
-            <label for="middle_name" class="block text-sm font-medium text-gray-700 mb-1">Middle Name</label>
-            <input type="text" id="middle_name" name="middle_name" value="{{ member.middle_name or '' }}"
-                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-          </div>
+
           <div>
             <label for="date_of_birth" class="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
             <input type="date" id="date_of_birth" name="date_of_birth"
@@ -172,15 +168,13 @@
                    value="{{ member.membership_date.strftime('%Y-%m-%d') if member.membership_date else '' }}"
                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
           </div>
-          <div>
+          <div x-data="memberStatusSelect()" x-init="init('{{ member.status }}')">
             <label for="status" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
             <select id="status" name="status"
                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-              <option value="active" {% if member.status == 'active' %}selected{% endif %}>Active</option>
-              <option value="inactive" {% if member.status == 'inactive' %}selected{% endif %}>Inactive</option>
-              <option value="visitor" {% if member.status == 'visitor' %}selected{% endif %}>Visitor</option>
-              <option value="transferred" {% if member.status == 'transferred' %}selected{% endif %}>Transferred</option>
-              <option value="deceased" {% if member.status == 'deceased' %}selected{% endif %}>Deceased</option>
+              <template x-for="s in statuses" :key="s">
+                <option :value="s" x-text="s.replace('_',' ').replace(/\b\w/g, l => l.toUpperCase())" :selected="s === current"></option>
+              </template>
             </select>
           </div>
           <div>
@@ -229,6 +223,23 @@
 </div>
 
 <script>
+function memberStatusSelect() {
+  return {
+    statuses: [],
+    current: '',
+    async init(currentValue) {
+      this.current = currentValue || '';
+      try {
+        const res = await apiCall('/api/members/statuses');
+        if (res.ok) {
+          this.statuses = await res.json();
+        }
+      } catch (e) {
+        console.error('Failed to load member statuses', e);
+      }
+    }
+  }
+}
 document.getElementById('memberForm').addEventListener('submit', async function(e) {
   e.preventDefault();
 

@@ -12,10 +12,13 @@ from .base import TimestampModel
 class MemberStatus(str, Enum):
     """Member status enumeration."""
 
-    ACTIVE = "active"
+    OUTREACH = "outreach"
+    FIRST_TIMER = "first timer"
+    MEMBER = "member"
+    SHEPHERD = "shepherd"
     INACTIVE = "inactive"
     VISITOR = "visitor"
-    TRANSFERRED = "transferred"
+    RELOCATED = "relocated"
 
 
 class MemberRole(str, Enum):
@@ -91,7 +94,7 @@ class MemberBase(TimestampModel):
     baptism_date: date | None = None
     ministry: Ministry | None = None
     membership_date: date | None = None
-    status: MemberStatus = MemberStatus.ACTIVE
+    status: MemberStatus = MemberStatus.MEMBER
     role: MemberRole = MemberRole.MEMBER
     notes: list[MemberNote] = Field(None, max_length=1000)
     is_active: bool = True

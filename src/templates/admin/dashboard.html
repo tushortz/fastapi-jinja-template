@@ -88,9 +88,9 @@
           <div class="ml-5 w-0 flex-1">
             <dl>
               <dt class="text-sm font-medium text-gray-500 truncate">
-                Total Activities
+                Total Events
               </dt>
-              <dd class="text-lg font-medium text-gray-900" x-text="stats.totalActivities || 0" x-show="!loading">
+              <dd class="text-lg font-medium text-gray-900" x-text="stats.totalEvents || 0" x-show="!loading">
                 0
               </dd>
               <dd class="text-lg font-medium text-gray-500" x-show="loading">
@@ -236,11 +236,11 @@
             this.stats.totalAttendance = attendanceData.total_records || 0;
           }
 
-          // Load activity statistics
-          const activityResponse = await apiCall('/activities/statistics');
-          if (activityResponse.ok) {
-            const activityData = await activityResponse.json();
-            this.stats.totalActivities = activityData.total_count || 0;
+          // Load event statistics
+          const eventResponse = await apiCall('/api/events/statistics');
+          if (eventResponse.ok) {
+            const eventData = await eventResponse.json();
+            this.stats.totalEvents = eventData.total_count || 0;
           }
         } catch (error) {
           console.error('Error loading admin statistics:', error);

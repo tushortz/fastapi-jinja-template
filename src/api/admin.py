@@ -1,10 +1,14 @@
 """Admin endpoints."""
 
+import io
+import json
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from fastapi.responses import JSONResponse, StreamingResponse
 
 from src.auth import get_current_admin_user
+from src.database import get_database
 from src.models.users import User, UserUpdate
 from src.services.users import UserService
 
@@ -72,3 +76,63 @@ async def delete_user(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
     return {"message": "User deactivated successfully"}
+
+
+# Backup and Restore
+@router.get("/backup", name="api_admin_backup")
+async def backup_database(current_user: User = Depends(get_current_admin_user)):
+    """Export all collections as a single JSON backup (admin only)."""
+    db = await get_database()
+    export_data: dict[str, list[dict]] = {}
+    for name in await db.list_collection_names():
+        collection = db.get_collection(name)
+        docs = await collection.find({}).to_list(length=None)
+        # stringify ObjectId and datetime; simple approach
+        for d in docs:
+            d["_id"] = str(d.get("_id"))
+        export_data[name] = docs
+
+    buf = io.BytesIO()
+    buf.write(json.dumps(export_data, default=str, ensure_ascii=False, indent=2).encode("utf-8"))
+    buf.seek(0)
+    return StreamingResponse(
+        buf,
+        media_type="application/json",
+        headers={
+            "Content-Disposition": 'attachment; filename="backup.json"'
+        },
+    )
+
+
+@router.post("/restore", name="api_admin_restore")
+async def restore_database(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_admin_user),
+):
+    """Upload a backup JSON and repopulate the database (admin only)."""
+    try:
+        content = await file.read()
+        data = json.loads(content)
+        if not isinstance(data, dict):
+            raise ValueError("Invalid backup format")
+
+        db = await get_database()
+        # Replace collections atomically per collection
+        for name, docs in data.items():
+            if not isinstance(docs, list):
+                continue
+            collection = db.get_collection(name)
+            # Clear existing data in this collection
+            await collection.delete_many({})
+            if docs:
+                # Remove _id if it's not a valid ObjectId string to let Mongo assign
+                sanitized = []
+                for d in docs:
+                    d = dict(d)
+                    d.pop("_id", None)
+                    sanitized.append(d)
+                await collection.insert_many(sanitized)
+
+        return JSONResponse({"message": "Restore completed successfully"})
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))

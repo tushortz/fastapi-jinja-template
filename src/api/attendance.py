@@ -5,8 +5,6 @@ from datetime import date
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
 
 from src.auth import get_current_user
 from src.models.attendance import (
@@ -18,11 +16,10 @@ from src.services.attendance import AttendanceService
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/attendance", tags=["attendance"])
-templates = Jinja2Templates(directory="src/templates")
+router = APIRouter(prefix="/api/attendance", tags=["attendance"])
 
 
-@router.post("/", response_model=Attendance, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=Attendance, status_code=status.HTTP_201_CREATED, name="api_create_attendance")
 async def create_attendance(
     attendance_create: AttendanceCreate,
     current_user: User = Depends(get_current_user),
@@ -53,7 +50,7 @@ async def create_attendance(
         )
 
 
-@router.get("/", response_model=list[Attendance])
+@router.get("/", response_model=list[Attendance], name="api_get_attendance_records")
 async def get_attendance_records(
     skip: int = Query(0, ge=0, description="Number of records to skip"),
     limit: int = Query(100, ge=1, le=1000, description="Number of records to return"),
@@ -82,7 +79,7 @@ async def get_attendance_records(
         )
 
 
-@router.get("/by-date/{attendance_date}", response_model=list[Attendance])
+@router.get("/by-date/{attendance_date}", response_model=list[Attendance], name="api_get_attendance_by_date")
 async def get_attendance_by_date(
     attendance_date: date,
     attendance_type: AttendanceType | None = Query(None, description="Filter by attendance type"),
@@ -106,7 +103,7 @@ async def get_attendance_by_date(
         )
 
 
-@router.get("/by-date-range", response_model=list[Attendance])
+@router.get("/by-date-range", response_model=list[Attendance], name="api_get_attendance_by_date_range")
 async def get_attendance_by_date_range(
     start_date: date = Query(..., description="Start date"),
     end_date: date = Query(..., description="End date"),
@@ -132,7 +129,7 @@ async def get_attendance_by_date_range(
         )
 
 
-@router.get("/member/{member_id}", response_model=list[Attendance])
+@router.get("/member/{member_id}", response_model=list[Attendance], name="api_get_member_attendance")
 async def get_member_attendance(
     member_id: str,
     skip: int = Query(0, ge=0, description="Number of records to skip"),
@@ -157,7 +154,7 @@ async def get_member_attendance(
         )
 
 
-@router.get("/member/{member_id}/summary", response_model=AttendanceSummary)
+@router.get("/member/{member_id}/summary", response_model=AttendanceSummary, name="api_get_member_attendance_summary")
 async def get_member_attendance_summary(
     member_id: str,
     start_date: date = Query(..., description="Start date"),
@@ -185,7 +182,7 @@ async def get_member_attendance_summary(
         )
 
 
-@router.get("/service-summary", response_model=ServiceAttendance)
+@router.get("/service-summary", response_model=ServiceAttendance, name="api_get_service_attendance_summary")
 async def get_service_attendance_summary(
     attendance_date: date = Query(..., description="Service date"),
     attendance_type: AttendanceType = Query(..., description="Service type"),
@@ -212,7 +209,7 @@ async def get_service_attendance_summary(
         )
 
 
-@router.get("/statistics")
+@router.get("/statistics", name="api_get_attendance_statistics")
 async def get_attendance_statistics(
     start_date: date | None = Query(None, description="Start date for statistics"),
     end_date: date | None = Query(None, description="End date for statistics"),
@@ -234,7 +231,7 @@ async def get_attendance_statistics(
         )
 
 
-@router.get("/trends")
+@router.get("/trends", name="api_get_attendance_trends")
 async def get_attendance_trends(
     start_date: date = Query(..., description="Start date"),
     end_date: date = Query(..., description="End date"),
@@ -259,7 +256,7 @@ async def get_attendance_trends(
         )
 
 
-@router.get("/{attendance_id}", response_model=Attendance)
+@router.get("/{attendance_id}", response_model=Attendance, name="api_get_attendance")
 async def get_attendance(
     attendance_id: str,
     current_user: User = Depends(get_current_user),
@@ -289,7 +286,7 @@ async def get_attendance(
         )
 
 
-@router.put("/{attendance_id}", response_model=Attendance)
+@router.put("/{attendance_id}", response_model=Attendance, name="api_update_attendance")
 async def update_attendance(
     attendance_id: str,
     attendance_update: AttendanceUpdate,
@@ -320,7 +317,7 @@ async def update_attendance(
         )
 
 
-@router.delete("/{attendance_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{attendance_id}", status_code=status.HTTP_204_NO_CONTENT, name="api_delete_attendance")
 async def delete_attendance(
     attendance_id: str,
     current_user: User = Depends(get_current_user),
@@ -349,89 +346,4 @@ async def delete_attendance(
         )
 
 
-# Web routes for attendance management
-@router.get("/dashboard", response_class=HTMLResponse)
-async def attendance_dashboard(
-    current_user: User = Depends(get_current_user),
-) -> HTMLResponse:
-    """Attendance dashboard page."""
-    logger.debug("Rendering attendance dashboard")
-
-    try:
-        attendance_service = AttendanceService()
-        stats = await attendance_service.get_attendance_statistics()
-        recent_attendance = await attendance_service.get_recent_attendance(limit=10)
-
-        return templates.TemplateResponse(
-            "attendance/dashboard.html",
-            {
-                "request": {},
-                "current_user": current_user,
-                "stats": stats,
-                "recent_attendance": recent_attendance,
-            }
-        )
-    except Exception as e:
-        logger.error("Error rendering attendance dashboard: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error"
-        )
-
-
-@router.get("/list", response_class=HTMLResponse)
-async def attendance_list(
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
-    search: str | None = Query(None),
-    member_id: str | None = Query(None),
-    attendance_type: AttendanceType | None = Query(None),
-    status: AttendanceStatus | None = Query(None),
-    current_user: User = Depends(get_current_user),
-) -> HTMLResponse:
-    """Attendance list page."""
-    logger.debug("Rendering attendance list")
-
-    try:
-        attendance_service = AttendanceService()
-        attendance_records = await attendance_service.get_attendance_records(
-            skip=skip, limit=limit, search=search, member_id=member_id,
-            attendance_type=attendance_type, status=status
-        )
-
-        return templates.TemplateResponse(
-            "attendance/list.html",
-            {
-                "request": {},
-                "current_user": current_user,
-                "attendance_records": attendance_records,
-                "skip": skip,
-                "limit": limit,
-                "search": search,
-                "member_id_filter": member_id,
-                "attendance_type_filter": attendance_type,
-                "status_filter": status,
-            }
-        )
-    except Exception as e:
-        logger.error("Error rendering attendance list: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error"
-        )
-
-
-@router.get("/create", response_class=HTMLResponse)
-async def create_attendance_form(
-    current_user: User = Depends(get_current_user),
-) -> HTMLResponse:
-    """Create attendance record form page."""
-    logger.debug("Rendering create attendance form")
-
-    return templates.TemplateResponse(
-        "attendance/create.html",
-        {
-            "request": {},
-            "current_user": current_user,
-        }
-    )
+# Note: HTML-rendering pages are defined under /dashboard in web_routes.py

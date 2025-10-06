@@ -27,13 +27,8 @@
                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
           </div>
           <div>
-            <label for="last_name" class="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
-            <input type="text" id="last_name" name="last_name" required
-                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-          </div>
-          <div>
-            <label for="middle_name" class="block text-sm font-medium text-gray-700 mb-1">Middle Name</label>
-            <input type="text" id="middle_name" name="middle_name"
+            <label for="last_name" class="block text-sm font-medium text-gray-700 mb-1">Last Name (optional)</label>
+            <input type="text" id="last_name" name="last_name"
                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
           </div>
           <div>
@@ -108,27 +103,7 @@
         </div>
       </div>
 
-      <!-- Emergency Contact -->
-      <div class="bg-gray-50 p-4 rounded-lg">
-        <h2 class="text-lg font-semibold text-gray-900 mb-4">Emergency Contact</h2>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label for="emergency_contact_name" class="block text-sm font-medium text-gray-700 mb-1">Contact Name</label>
-            <input type="text" id="emergency_contact_name" name="emergency_contact_name"
-                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-          </div>
-          <div>
-            <label for="emergency_contact_phone" class="block text-sm font-medium text-gray-700 mb-1">Contact Phone</label>
-            <input type="tel" id="emergency_contact_phone" name="emergency_contact_phone"
-                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-          </div>
-          <div>
-            <label for="emergency_contact_relationship" class="block text-sm font-medium text-gray-700 mb-1">Relationship</label>
-            <input type="text" id="emergency_contact_relationship" name="emergency_contact_relationship"
-                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-          </div>
-        </div>
-      </div>
+      <!-- Emergency Contact removed -->
 
       <!-- Professional Information -->
       <div class="bg-gray-50 p-4 rounded-lg">
@@ -237,14 +212,14 @@ document.getElementById('memberForm').addEventListener('submit', async function(
   });
 
   try {
-    const response = await apiCall('/members/', {
+    const response = await apiCall('/api/members/', {
       method: 'POST',
       body: JSON.stringify(data)
     });
 
     if (response.ok) {
       const member = await response.json();
-      window.location.href = `/members/${member.id}/view`;
+      window.location.href = `/dashboard/members/${member.id}/view`;
     } else {
       const error = await response.json();
       alert('Error creating member: ' + (error.detail || 'Unknown error'));

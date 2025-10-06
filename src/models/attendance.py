@@ -39,7 +39,6 @@ class AttendanceBase(TimestampModel):
     attendance_date: date = Field(..., description="Date of attendance")
     attendance_type: AttendanceType = Field(..., description="Type of service/event")
     status: AttendanceStatus = Field(..., description="Attendance status")
-    service_time: str | None = Field(None, max_length=50, description="Service time (e.g., '9:00 AM')")
     notes: str | None = Field(None, max_length=500, description="Additional notes")
     recorded_by: str = Field(..., description="ID of user who recorded the attendance")
 
@@ -63,7 +62,7 @@ class AttendanceUpdate(TimestampModel):
     attendance_date: date | None = None
     attendance_type: AttendanceType | None = None
     status: AttendanceStatus | None = None
-    service_time: str | None = Field(None, max_length=50)
+    # service_time removed
     notes: str | None = Field(None, max_length=500)
     recorded_by: str | None = None
 
@@ -116,7 +115,7 @@ class ServiceAttendance(TimestampModel):
 
     service_date: date
     service_type: AttendanceType
-    service_time: str | None = None
+    # service_time removed
     total_members: int = 0
     present_members: int = 0
     absent_members: int = 0

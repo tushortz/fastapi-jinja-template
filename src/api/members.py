@@ -4,8 +4,6 @@ import logging
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
 
 from src.auth import get_current_user
 from src.models.members import (
@@ -16,11 +14,10 @@ from src.services.members import MemberService
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/members", tags=["members"])
-templates = Jinja2Templates(directory="src/templates")
+router = APIRouter(prefix="/api/members", tags=["members"])
 
 
-@router.post("/", response_model=Member, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=Member, status_code=status.HTTP_201_CREATED, name="api_create_member")
 async def create_member(
     member_create: MemberCreate,
     current_user: User = Depends(get_current_user),
@@ -47,7 +44,7 @@ async def create_member(
         )
 
 
-@router.get("/", response_model=list[Member])
+@router.get("/", response_model=list[Member], name="api_get_members")
 async def get_members(
     skip: int = Query(0, ge=0, description="Number of records to skip"),
     limit: int = Query(100, ge=1, le=1000, description="Number of records to return"),
@@ -74,7 +71,7 @@ async def get_members(
         )
 
 
-@router.get("/active", response_model=list[Member])
+@router.get("/active", response_model=list[Member], name="api_get_active_members")
 async def get_active_members(
     skip: int = Query(0, ge=0, description="Number of records to skip"),
     limit: int = Query(100, ge=1, le=1000, description="Number of records to return"),
@@ -96,7 +93,7 @@ async def get_active_members(
         )
 
 
-@router.get("/birthdays/this-month", response_model=list[Member])
+@router.get("/birthdays/this-month", response_model=list[Member], name="api_get_birthdays_this_month")
 async def get_birthdays_this_month(
     current_user: User = Depends(get_current_user),
 ) -> list[Member]:
@@ -116,7 +113,7 @@ async def get_birthdays_this_month(
         )
 
 
-@router.get("/birthdays/today", response_model=list[Member])
+@router.get("/birthdays/today", response_model=list[Member], name="api_get_birthdays_today")
 async def get_birthdays_today(
     current_user: User = Depends(get_current_user),
 ) -> list[Member]:
@@ -136,7 +133,7 @@ async def get_birthdays_today(
         )
 
 
-@router.get("/statistics")
+@router.get("/statistics", name="api_get_member_statistics")
 async def get_member_statistics(
     current_user: User = Depends(get_current_user),
 ) -> dict[str, Any]:
@@ -156,7 +153,7 @@ async def get_member_statistics(
         )
 
 
-@router.get("/{member_id}", response_model=Member)
+@router.get("/{member_id}", response_model=Member, name="api_get_member")
 async def get_member(
     member_id: str,
     current_user: User = Depends(get_current_user),
@@ -186,7 +183,7 @@ async def get_member(
         )
 
 
-@router.put("/{member_id}", response_model=Member)
+@router.put("/{member_id}", response_model=Member, name="api_update_member")
 async def update_member(
     member_id: str,
     member_update: MemberUpdate,
@@ -223,7 +220,7 @@ async def update_member(
         )
 
 
-@router.delete("/{member_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{member_id}", status_code=status.HTTP_204_NO_CONTENT, name="api_delete_member")
 async def delete_member(
     member_id: str,
     current_user: User = Depends(get_current_user),
@@ -252,160 +249,12 @@ async def delete_member(
         )
 
 
-# Web routes for member management
-@router.get("/dashboard", response_class=HTMLResponse)
-async def members_dashboard(
+# Note: HTML-rendering pages are defined under /dashboard in web_routes.py
+
+
+@router.get("/statuses", response_model=list[str], name="api_get_member_statuses")
+async def get_member_statuses(
     current_user: User = Depends(get_current_user),
-) -> HTMLResponse:
-    """Member dashboard page."""
-    logger.debug("Rendering members dashboard")
-
-    try:
-        member_service = MemberService()
-        stats = await member_service.get_member_statistics()
-        birthdays_today = await member_service.get_birthdays_today()
-        birthdays_this_month = await member_service.get_birthdays_this_month()
-
-        return templates.TemplateResponse(
-            "members/dashboard.html",
-            {
-                "request": {},
-                "current_user": current_user,
-                "stats": stats,
-                "birthdays_today": birthdays_today,
-                "birthdays_this_month": birthdays_this_month,
-            }
-        )
-    except Exception as e:
-        logger.error("Error rendering members dashboard: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error"
-        )
-
-
-@router.get("/list", response_class=HTMLResponse)
-async def members_list(
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
-    search: str | None = Query(None),
-    status: MemberStatus | None = Query(None),
-    role: MemberRole | None = Query(None),
-    current_user: User = Depends(get_current_user),
-) -> HTMLResponse:
-    """Members list page."""
-    logger.debug("Rendering members list")
-
-    try:
-        member_service = MemberService()
-        members = await member_service.get_members(
-            skip=skip, limit=limit, search=search, status=status, role=role
-        )
-        total_count = await member_service.count_members()
-
-        return templates.TemplateResponse(
-            "members/list.html",
-            {
-                "request": {},
-                "current_user": current_user,
-                "members": members,
-                "total_count": total_count,
-                "skip": skip,
-                "limit": limit,
-                "search": search,
-                "status_filter": status,
-                "role_filter": role,
-            }
-        )
-    except Exception as e:
-        logger.error("Error rendering members list: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error"
-        )
-
-
-@router.get("/create", response_class=HTMLResponse)
-async def create_member_form(
-    current_user: User = Depends(get_current_user),
-) -> HTMLResponse:
-    """Create member form page."""
-    logger.debug("Rendering create member form")
-
-    return templates.TemplateResponse(
-        "members/create.html",
-        {
-            "request": {},
-            "current_user": current_user,
-        }
-    )
-
-
-@router.get("/{member_id}/edit", response_class=HTMLResponse)
-async def edit_member_form(
-    member_id: str,
-    current_user: User = Depends(get_current_user),
-) -> HTMLResponse:
-    """Edit member form page."""
-    logger.debug("Rendering edit member form for: %s", member_id)
-
-    try:
-        member_service = MemberService()
-        member = await member_service.get_member_by_id(member_id)
-        if not member:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Member not found"
-            )
-
-        return templates.TemplateResponse(
-            "members/edit.html",
-            {
-                "request": {},
-                "current_user": current_user,
-                "member": member,
-            }
-        )
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error("Error rendering edit member form: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error"
-        )
-
-
-@router.get("/{member_id}/view", response_class=HTMLResponse)
-async def view_member(
-    member_id: str,
-    current_user: User = Depends(get_current_user),
-) -> HTMLResponse:
-    """View member details page."""
-    logger.debug("Rendering member view for: %s", member_id)
-
-    try:
-        member_service = MemberService()
-        member = await member_service.get_member_by_id(member_id)
-        if not member:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Member not found"
-            )
-
-        return templates.TemplateResponse(
-            "members/view.html",
-            {
-                "request": {},
-                "current_user": current_user,
-                "member": member,
-            }
-        )
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error("Error rendering member view: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error"
-        )
+) -> list[str]:
+    """Return available member statuses from the enum."""
+    return [s.value for s in MemberStatus]
