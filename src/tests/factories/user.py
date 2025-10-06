@@ -50,6 +50,6 @@ class UserInDBFactory(TimestampModelFactory):
     id = factory.LazyFunction(fake.uuid4)
     email = factory.LazyFunction(fake.email)
     username = factory.LazyFunction(fake.user_name)
-    hashed_password = factory.LazyFunction(fake.password(length=60))
+    hashed_password = factory.LazyFunction(lambda: fake.password(length=60))
     is_active = True
     is_admin = False

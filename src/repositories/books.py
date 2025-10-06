@@ -1,6 +1,5 @@
 """Book repository."""
 
-from typing import Optional
 
 from bson import ObjectId
 
@@ -15,7 +14,7 @@ class BookRepository(BaseRepository):
     def __init__(self):
         super().__init__(BookInDB, "books")
 
-    async def get_by_title(self, title: str) -> Optional[BookInDB]:
+    async def get_by_title(self, title: str) -> BookInDB | None:
         """Get book by title."""
         collection = await self.get_collection()
         doc = await collection.find_one({"title": title})
@@ -56,7 +55,7 @@ class BookRepository(BaseRepository):
             result.append(self.model(**doc))
         return result
 
-    async def get_by_isbn(self, isbn: str) -> Optional[BookInDB]:
+    async def get_by_isbn(self, isbn: str) -> BookInDB | None:
         """Get book by ISBN."""
         collection = await self.get_collection()
         doc = await collection.find_one({"isbn": isbn})
@@ -66,9 +65,7 @@ class BookRepository(BaseRepository):
             return BookInDB(**doc)
         return None
 
-    async def get_by_id_and_user(
-        self, book_id: str, user_id: str
-    ) -> Optional[BookInDB]:
+    async def get_by_id_and_user(self, book_id: str, user_id: str) -> BookInDB | None:
         """Get book by ID and user."""
         collection = await self.get_collection()
         doc = await collection.find_one({"_id": ObjectId(book_id), "user_id": user_id})
@@ -135,7 +132,7 @@ class BookRepository(BaseRepository):
         }
         return await self.get_many(filter_dict=filter_dict)
 
-    async def get_by_isbn_and_user(self, isbn: str, user_id: str) -> Optional[BookInDB]:
+    async def get_by_isbn_and_user(self, isbn: str, user_id: str) -> BookInDB | None:
         """Get book by ISBN for a specific user."""
         collection = await self.get_collection()
         doc = await collection.find_one({"isbn": isbn, "user_id": user_id})

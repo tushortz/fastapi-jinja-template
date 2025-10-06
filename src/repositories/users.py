@@ -1,6 +1,6 @@
 """User repository."""
 
-from typing import Any, Optional
+from typing import Any
 
 from src.models.users import UserCreate, UserInDB
 
@@ -13,7 +13,7 @@ class UserRepository(BaseRepository):
     def __init__(self):
         super().__init__(UserInDB, "users")
 
-    async def get_by_email(self, email: str) -> Optional[UserInDB]:
+    async def get_by_email(self, email: str) -> UserInDB | None:
         """Get user by email."""
         collection = await self.get_collection()
         doc = await collection.find_one({"email": email})
@@ -23,7 +23,7 @@ class UserRepository(BaseRepository):
             return UserInDB(**doc)
         return None
 
-    async def get_by_username(self, username: str) -> Optional[UserInDB]:
+    async def get_by_username(self, username: str) -> UserInDB | None:
         """Get user by username."""
         collection = await self.get_collection()
         doc = await collection.find_one({"username": username})
@@ -58,8 +58,8 @@ class UserRepository(BaseRepository):
         self,
         skip: int = 0,
         limit: int = 100,
-        filter_dict: Optional[dict[str, Any]] = None,
-        search: Optional[str] = None,
+        filter_dict: dict[str, Any] | None = None,
+        search: str | None = None,
         sort_by: str = "created_at",
         sort_order: str = "desc",
     ) -> list[UserInDB]:

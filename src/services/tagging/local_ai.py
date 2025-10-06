@@ -2,7 +2,6 @@
 
 import json
 import logging
-from typing import List
 
 import httpx
 
@@ -20,7 +19,7 @@ class LocalTagService:
 
     async def generate_tags(
         self, quote_text: str, book_title: str | None = None
-    ) -> List[str]:
+    ) -> list[str]:
         """Generate tags using local API."""
         system_prompt = (
             "You generate 3-5 concise, lowercase tags (max 2 words each) that categorize a quote by "

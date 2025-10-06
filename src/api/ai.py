@@ -1,7 +1,6 @@
 """AI analysis endpoints."""
 
 import logging
-from typing import Any, Dict
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
@@ -31,7 +30,9 @@ class QuoteAnalysisResponse(BaseModel):
     analysis_type: str = "general"
 
 
-@router.post("/analyze-quote", response_model=QuoteAnalysisResponse, name="api_ai_analyze_quote")
+@router.post(
+    "/analyze-quote", response_model=QuoteAnalysisResponse, name="api_ai_analyze_quote"
+)
 async def analyze_quote(
     request: QuoteAnalysisRequest,
     current_user: User = Depends(get_current_active_user),
@@ -45,17 +46,14 @@ async def analyze_quote(
             quote_text=request.quote_text,
             tags=request.tags,
             book_title=request.book_title,
-            notes=request.notes
+            notes=request.notes,
         )
 
-        return QuoteAnalysisResponse(
-            insight=insight,
-            analysis_type="general"
-        )
+        return QuoteAnalysisResponse(insight=insight, analysis_type="general")
 
     except Exception as e:
         logger.error("Error analyzing quote: %s", str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to analyze quote"
+            detail="Failed to analyze quote",
         ) from e

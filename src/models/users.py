@@ -1,6 +1,5 @@
 """User model."""
 
-from typing import Optional
 
 from pydantic import EmailStr, Field
 
@@ -25,19 +24,19 @@ class UserCreate(UserBase):
 class UserUpdate(TimestampModel):
     """User update model."""
 
-    email: Optional[EmailStr] = None
-    username: Optional[str] = Field(None, min_length=3, max_length=50)
-    is_active: Optional[bool] = None
-    is_admin: Optional[bool] = None
+    email: EmailStr | None = None
+    username: str | None = Field(None, min_length=3, max_length=50)
+    is_active: bool | None = None
+    is_admin: bool | None = None
 
 
 class UserProfileUpdate(TimestampModel):
     """User profile update model for self-updates."""
 
-    email: Optional[EmailStr] = None
-    username: Optional[str] = Field(None, min_length=3, max_length=50)
-    current_password: Optional[str] = None
-    new_password: Optional[str] = Field(None, min_length=8)
+    email: EmailStr | None = None
+    username: str | None = Field(None, min_length=3, max_length=50)
+    current_password: str | None = None
+    new_password: str | None = Field(None, min_length=8)
 
 
 class UserInDB(UserBase):

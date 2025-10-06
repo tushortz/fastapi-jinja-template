@@ -1,7 +1,6 @@
 """User service for business logic."""
 
 import logging
-from typing import Optional
 
 import bcrypt
 from passlib.context import CryptContext
@@ -84,7 +83,7 @@ class UserService:
             updated_at=user_in_db.updated_at,
         )
 
-    async def get_user_by_id(self, user_id: str) -> Optional[User]:
+    async def get_user_by_id(self, user_id: str) -> User | None:
         """Get user by ID."""
         user_in_db = await self.user_repo.get_by_id(user_id)
         if not user_in_db:
@@ -100,17 +99,15 @@ class UserService:
             updated_at=user_in_db.updated_at,
         )
 
-    async def get_user_by_email(self, email: str) -> Optional[UserInDB]:
+    async def get_user_by_email(self, email: str) -> UserInDB | None:
         """Get user by email (returns UserInDB for authentication)."""
         return await self.user_repo.get_by_email(email)
 
-    async def get_user_by_username(self, username: str) -> Optional[UserInDB]:
+    async def get_user_by_username(self, username: str) -> UserInDB | None:
         """Get user by username (returns UserInDB for authentication)."""
         return await self.user_repo.get_by_username(username)
 
-    async def update_user(
-        self, user_id: str, user_update: UserUpdate
-    ) -> Optional[User]:
+    async def update_user(self, user_id: str, user_update: UserUpdate) -> User | None:
         """Update user."""
         # Check if email is being changed and if it's already taken
         if user_update.email:
@@ -173,7 +170,7 @@ class UserService:
             for user in users_in_db
         ]
 
-    async def authenticate_user(self, email: str, password: str) -> Optional[UserInDB]:
+    async def authenticate_user(self, email: str, password: str) -> UserInDB | None:
         """Authenticate user with email and password."""
         logger.debug("Authenticating user: %s", email)
 
@@ -200,7 +197,7 @@ class UserService:
 
     async def update_user_profile(
         self, user_id: str, profile_update: UserProfileUpdate
-    ) -> Optional[User]:
+    ) -> User | None:
         """Update user profile (self-update with password verification)."""
         logger.info("Updating profile for user ID: %s", user_id)
 

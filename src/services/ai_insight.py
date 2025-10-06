@@ -1,7 +1,6 @@
 """AI insight service for quote analysis."""
 
 import logging
-from typing import List
 
 import httpx
 
@@ -22,7 +21,7 @@ class AIInsightService:
     async def analyze_quote(
         self,
         quote_text: str,
-        tags: List[str] = None,
+        tags: list[str] = None,
         book_title: str = "",
         notes: str = "",
     ) -> str:
@@ -52,7 +51,7 @@ class AIInsightService:
             return self._generate_fallback_insight(quote_text, tags, book_title)
 
     async def _generate_insight_with_gemini(
-        self, quote_text: str, tags: List[str], book_title: str, notes: str
+        self, quote_text: str, tags: list[str], book_title: str, notes: str
     ) -> str:
         """Generate insight using Gemini AI."""
         try:
@@ -74,7 +73,7 @@ class AIInsightService:
             return self._generate_fallback_insight(quote_text, tags, book_title)
 
     async def _generate_insight_with_local_ai(
-        self, quote_text: str, tags: List[str], book_title: str, notes: str
+        self, quote_text: str, tags: list[str], book_title: str, notes: str
     ) -> str:
         """Generate insight using local AI service."""
         try:
@@ -112,7 +111,7 @@ class AIInsightService:
             return self._generate_fallback_insight(quote_text, tags, book_title)
 
     def _build_analysis_prompt(
-        self, quote_text: str, tags: List[str], book_title: str, notes: str
+        self, quote_text: str, tags: list[str], book_title: str, notes: str
     ) -> str:
         """Build a comprehensive prompt for quote analysis."""
         prompt = f"""
@@ -155,7 +154,7 @@ class AIInsightService:
         return prompt.strip()
 
     def _generate_fallback_insight(
-        self, quote_text: str, tags: List[str], book_title: str
+        self, quote_text: str, tags: list[str], book_title: str
     ) -> str:
         """Generate a simple fallback insight when AI is unavailable."""
         insight_parts = []

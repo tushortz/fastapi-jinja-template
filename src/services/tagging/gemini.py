@@ -1,7 +1,6 @@
 """Gemini tagging service implementation."""
 
 import logging
-from typing import List
 
 try:
     import google.generativeai as genai
@@ -27,7 +26,7 @@ class GeminiTagService:
 
     async def generate_tags(
         self, quote_text: str, book_title: str | None = None
-    ) -> List[str]:
+    ) -> list[str]:
         """Generate tags using Gemini."""
         if not self.model:
             return []

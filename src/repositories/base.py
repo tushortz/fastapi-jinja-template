@@ -1,6 +1,6 @@
 """Base repository class."""
 
-from typing import Any, Optional, TypeVar
+from typing import Any, TypeVar
 
 from bson import ObjectId
 from pydantic import BaseModel
@@ -32,7 +32,7 @@ class BaseRepository:
         result = await collection.insert_one(obj_dict)
         return await self.get_by_id(str(result.inserted_id))
 
-    async def get_by_id(self, id: str) -> Optional[ModelType]:
+    async def get_by_id(self, id: str) -> ModelType | None:
         """Get document by ID."""
         collection = await self.get_collection()
         doc = await collection.find_one({"_id": ObjectId(id)})
@@ -46,8 +46,8 @@ class BaseRepository:
         self,
         skip: int = 0,
         limit: int = 100,
-        filter_dict: Optional[dict[str, Any]] = None,
-        search: Optional[str] = None,
+        filter_dict: dict[str, Any] | None = None,
+        search: str | None = None,
         sort_by: str = "created_at",
         sort_order: str = "desc",
     ) -> list[ModelType]:
@@ -82,7 +82,7 @@ class BaseRepository:
             result.append(self.model(**doc))
         return result
 
-    async def update(self, id: str, obj_in: UpdateSchemaType) -> Optional[ModelType]:
+    async def update(self, id: str, obj_in: UpdateSchemaType) -> ModelType | None:
         """Update document by ID."""
         collection = await self.get_collection()
         obj_dict = obj_in.model_dump(exclude_unset=True)
@@ -100,7 +100,7 @@ class BaseRepository:
         result = await collection.delete_one({"_id": ObjectId(id)})
         return result.deleted_count > 0
 
-    async def count(self, filter_dict: Optional[dict[str, Any]] = None) -> int:
+    async def count(self, filter_dict: dict[str, Any] | None = None) -> int:
         """Count documents matching filter."""
         collection = await self.get_collection()
         filter_dict = filter_dict or {}

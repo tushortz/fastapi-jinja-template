@@ -2,7 +2,6 @@
 
 import logging
 from datetime import timedelta
-from typing import Optional
 
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -18,7 +17,7 @@ logger = logging.getLogger(__name__)
 security = HTTPBearer()
 
 
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
+def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:
     """Create JWT access token."""
     logger.info("Creating access token for user: %s", data.get("sub", "unknown"))
 
@@ -41,7 +40,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     return encoded_jwt
 
 
-def create_refresh_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
+def create_refresh_token(data: dict, expires_delta: timedelta | None = None) -> str:
     """Create JWT refresh token."""
     logger.info("Creating refresh token for user: %s", data.get("sub", "unknown"))
 
@@ -62,7 +61,7 @@ def create_refresh_token(data: dict, expires_delta: Optional[timedelta] = None) 
     return encoded_jwt
 
 
-def verify_refresh_token(token: str) -> Optional[str]:
+def verify_refresh_token(token: str) -> str | None:
     """Verify refresh token and return user ID."""
     try:
         payload = jwt.decode(
@@ -155,7 +154,9 @@ def require_active_user(func):
             )
             return RedirectResponse(url=request.url_for("login"))
 
-        logger.debug("Active user access granted to %s: %s", func.__name__, current_user.username)
+        logger.debug(
+            "Active user access granted to %s: %s", func.__name__, current_user.username
+        )
         return await func(request, *args, **kwargs)
 
     return wrapper
@@ -171,7 +172,9 @@ def require_admin_user(func):
     async def wrapper(request: Request, *args, **kwargs):
         current_user = await get_current_user_from_cookie(request)
         if not current_user:
-            logger.debug("Unauthenticated user attempted to access admin %s", func.__name__)
+            logger.debug(
+                "Unauthenticated user attempted to access admin %s", func.__name__
+            )
             return RedirectResponse(url=request.url_for("login"))
 
         if not current_user.is_active:
@@ -190,7 +193,9 @@ def require_admin_user(func):
             )
             return RedirectResponse(url=request.url_for("dashboard"))
 
-        logger.debug("Admin user access granted to %s: %s", func.__name__, current_user.username)
+        logger.debug(
+            "Admin user access granted to %s: %s", func.__name__, current_user.username
+        )
         return await func(request, *args, **kwargs)
 
     return wrapper
@@ -216,7 +221,7 @@ async def get_current_admin_user(
 
 async def get_current_user_from_cookie(
     request: Request,
-) -> Optional[User]:
+) -> User | None:
     """Get current authenticated user from cookie (for web routes)."""
     logger.debug("Attempting to get current user from cookie")
 

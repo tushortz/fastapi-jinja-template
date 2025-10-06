@@ -2,12 +2,8 @@
 
 import pytest
 
-from src.models.books import BookCreate
-from src.models.quotes import QuoteCreate
-from src.models.users import UserCreate
-from src.repositories.books import BookRepository
-from src.repositories.quotes import QuoteRepository
 from src.repositories.users import UserRepository
+from src.tests.factories.user import UserCreateFactory
 
 
 class TestUserRepository:
@@ -36,14 +32,12 @@ class TestUserRepository:
                 return await self.get_by_id(str(result.inserted_id))
 
         user_repo = TestUserRepository(test_db)
-        user_create = UserCreate(
-            email="test@example.com", username="testuser", password="password123"
-        )
+        user_create = UserCreateFactory()
 
         user = await user_repo.create_user(user_create, "hashed_password")
 
-        assert user.email == "test@example.com"
-        assert user.username == "testuser"
+        assert user.email == user_create.email
+        assert user.username == user_create.username
         assert user.hashed_password == "hashed_password"
         assert user.is_active is True
         assert user.is_admin is False
@@ -51,59 +45,63 @@ class TestUserRepository:
     @pytest.mark.asyncio
     async def test_get_by_email(self, test_db, override_get_database):
         """Test getting user by email."""
-        user_repo = UserRepository()
-        user_create = UserCreate(
-            email="test@example.com", username="testuser", password="password123"
-        )
+        from unittest.mock import patch
 
-        await user_repo.create_user(user_create, "hashed_password")
-        user = await user_repo.get_by_email("test@example.com")
+        with patch("src.repositories.base.get_database", return_value=test_db):
+            user_repo = UserRepository()
+            user_create = UserCreateFactory()
 
-        assert user is not None
-        assert user.email == "test@example.com"
-        assert user.username == "testuser"
+            await user_repo.create_user(user_create, "hashed_password")
+            user = await user_repo.get_by_email(user_create.email)
+
+            assert user is not None
+            assert user.email == user_create.email
+            assert user.username == user_create.username
 
     @pytest.mark.asyncio
     async def test_get_by_username(self, test_db, override_get_database):
         """Test getting user by username."""
-        user_repo = UserRepository()
-        user_create = UserCreate(
-            email="test@example.com", username="testuser", password="password123"
-        )
+        from unittest.mock import patch
 
-        await user_repo.create_user(user_create, "hashed_password")
-        user = await user_repo.get_by_username("testuser")
+        with patch("src.repositories.base.get_database", return_value=test_db):
+            user_repo = UserRepository()
+            user_create = UserCreateFactory()
 
-        assert user is not None
-        assert user.email == "test@example.com"
-        assert user.username == "testuser"
+            await user_repo.create_user(user_create, "hashed_password")
+            user = await user_repo.get_by_username(user_create.username)
+
+            assert user is not None
+            assert user.email == user_create.email
+            assert user.username == user_create.username
 
     @pytest.mark.asyncio
     async def test_is_email_taken(self, test_db, override_get_database):
         """Test checking if email is taken."""
-        user_repo = UserRepository()
-        user_create = UserCreate(
-            email="test@example.com", username="testuser", password="password123"
-        )
+        from unittest.mock import patch
 
-        # Initially not taken
-        assert await user_repo.is_email_taken("test@example.com") is False
+        with patch("src.repositories.base.get_database", return_value=test_db):
+            user_repo = UserRepository()
+            user_create = UserCreateFactory()
 
-        # After creating user, should be taken
-        await user_repo.create_user(user_create, "hashed_password")
-        assert await user_repo.is_email_taken("test@example.com") is True
+            # Initially not taken
+            assert await user_repo.is_email_taken(user_create.email) is False
+
+            # After creating user, should be taken
+            await user_repo.create_user(user_create, "hashed_password")
+            assert await user_repo.is_email_taken(user_create.email) is True
 
     @pytest.mark.asyncio
     async def test_is_username_taken(self, test_db, override_get_database):
         """Test checking if username is taken."""
-        user_repo = UserRepository()
-        user_create = UserCreate(
-            email="test@example.com", username="testuser", password="password123"
-        )
+        from unittest.mock import patch
 
-        # Initially not taken
-        assert await user_repo.is_username_taken("testuser") is False
+        with patch("src.repositories.base.get_database", return_value=test_db):
+            user_repo = UserRepository()
+            user_create = UserCreateFactory()
 
-        # After creating user, should be taken
-        await user_repo.create_user(user_create, "hashed_password")
-        assert await user_repo.is_username_taken("testuser") is True
+            # Initially not taken
+            assert await user_repo.is_username_taken(user_create.username) is False
+
+            # After creating user, should be taken
+            await user_repo.create_user(user_create, "hashed_password")
+            assert await user_repo.is_username_taken(user_create.username) is True
