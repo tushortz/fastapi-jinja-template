@@ -38,26 +38,24 @@
                    value="{{ member.date_of_birth.strftime('%Y-%m-%d') if member.date_of_birth else '' }}"
                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
           </div>
-          <div>
+          <div x-data="enumSelectPrefill('/api/members/enums/genders', '{{ member.gender or '' }}')" x-init="init()">
             <label for="gender" class="block text-sm font-medium text-gray-700 mb-1">Gender</label>
-            <select id="gender" name="gender"
+            <select id="gender" name="gender" x-model="current"
                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
               <option value="">Select Gender</option>
-              <option value="male" {% if member.gender == 'male' %}selected{% endif %}>Male</option>
-              <option value="female" {% if member.gender == 'female' %}selected{% endif %}>Female</option>
-              <option value="other" {% if member.gender == 'other' %}selected{% endif %}>Other</option>
+              <template x-for="v in values" :key="v">
+                <option :value="v" x-text="v.replace('_',' ').replace(/\b\w/g, l => l.toUpperCase())"></option>
+              </template>
             </select>
           </div>
-          <div>
+          <div x-data="enumSelectPrefill('/api/members/enums/marital-statuses', '{{ member.marital_status or '' }}')" x-init="init()">
             <label for="marital_status" class="block text-sm font-medium text-gray-700 mb-1">Marital Status</label>
-            <select id="marital_status" name="marital_status"
+            <select id="marital_status" name="marital_status" x-model="current"
                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
               <option value="">Select Marital Status</option>
-              <option value="single" {% if member.marital_status == 'single' %}selected{% endif %}>Single</option>
-              <option value="married" {% if member.marital_status == 'married' %}selected{% endif %}>Married</option>
-              <option value="divorced" {% if member.marital_status == 'divorced' %}selected{% endif %}>Divorced</option>
-              <option value="widowed" {% if member.marital_status == 'widowed' %}selected{% endif %}>Widowed</option>
-              <option value="separated" {% if member.marital_status == 'separated' %}selected{% endif %}>Separated</option>
+              <template x-for="v in values" :key="v">
+                <option :value="v" x-text="v.replace('_',' ').replace(/\b\w/g, l => l.toUpperCase())"></option>
+              </template>
             </select>
           </div>
         </div>
@@ -168,29 +166,23 @@
                    value="{{ member.membership_date.strftime('%Y-%m-%d') if member.membership_date else '' }}"
                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
           </div>
-          <div x-data="memberStatusSelect()" x-init="init('{{ member.status }}')">
+          <div x-data="enumSelectPrefill('/api/members/enums/statuses', '{{ member.status }}')" x-init="init()">
             <label for="status" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-            <select id="status" name="status"
+            <select id="status" name="status" x-model="current"
                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-              <template x-for="s in statuses" :key="s">
-                <option :value="s" x-text="s.replace('_',' ').replace(/\b\w/g, l => l.toUpperCase())" :selected="s === current"></option>
+              <template x-for="v in values" :key="v">
+                <option :value="v" x-text="v.replace('_',' ').replace(/\b\w/g, l => l.toUpperCase())"></option>
               </template>
             </select>
           </div>
-          <div>
+          <div x-data="enumSelectPrefill('/api/members/enums/roles', '{{ member.role or '' }}')" x-init="init()">
             <label for="role" class="block text-sm font-medium text-gray-700 mb-1">Role</label>
-            <select id="role" name="role"
+            <select id="role" name="role" x-model="current"
                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-              <option value="member" {% if member.role == 'member' %}selected{% endif %}>Member</option>
-              <option value="pastor" {% if member.role == 'pastor' %}selected{% endif %}>Pastor</option>
-              <option value="elder" {% if member.role == 'elder' %}selected{% endif %}>Elder</option>
-              <option value="deacon" {% if member.role == 'deacon' %}selected{% endif %}>Deacon</option>
-              <option value="youth_leader" {% if member.role == 'youth_leader' %}selected{% endif %}>Youth Leader</option>
-              <option value="children_leader" {% if member.role == 'children_leader' %}selected{% endif %}>Children Leader</option>
-              <option value="worship_leader" {% if member.role == 'worship_leader' %}selected{% endif %}>Worship Leader</option>
-              <option value="usher" {% if member.role == 'usher' %}selected{% endif %}>Usher</option>
-              <option value="choir_member" {% if member.role == 'choir_member' %}selected{% endif %}>Choir Member</option>
-              <option value="volunteer" {% if member.role == 'volunteer' %}selected{% endif %}>Volunteer</option>
+              <option value="">Select Role</option>
+              <template x-for="v in values" :key="v">
+                <option :value="v" x-text="v.replace('_',' ').replace(/\b\w/g, l => l.toUpperCase())"></option>
+              </template>
             </select>
           </div>
         </div>
@@ -223,19 +215,18 @@
 </div>
 
 <script>
-function memberStatusSelect() {
+function enumSelectPrefill(endpoint, currentValue) {
   return {
-    statuses: [],
-    current: '',
-    async init(currentValue) {
-      this.current = currentValue || '';
+    values: [],
+    current: currentValue || '',
+    async init() {
       try {
-        const res = await apiCall('/api/members/statuses');
+        const res = await apiCall(endpoint);
         if (res.ok) {
-          this.statuses = await res.json();
+          this.values = await res.json();
         }
       } catch (e) {
-        console.error('Failed to load member statuses', e);
+        console.error('Failed to load enum values from', endpoint, e);
       }
     }
   }
@@ -264,11 +255,11 @@ document.getElementById('memberForm').addEventListener('submit', async function(
       window.location.href = `/members/${member.id}/view`;
     } else {
       const error = await response.json();
-      alert('Error updating member: ' + (error.detail || 'Unknown error'));
+      Alpine.store('toastStore')?.add('Error updating member: ' + (error.detail || 'Unknown error'), 'error');
     }
   } catch (error) {
     console.error('Error:', error);
-    alert('Error updating member. Please try again.');
+    Alpine.store('toastStore')?.add('Error updating member. Please try again.', 'error');
   }
 });
 </script>

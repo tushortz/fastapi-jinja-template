@@ -142,6 +142,30 @@ class CalendarEventRepository(BaseRepository):
             result.append(CalendarEventInDB(**doc))
         return result
 
+    async def get_past_events_by_end_date(self, limit: int = 50) -> list[CalendarEventInDB]:
+        """Get past events using end_date when present, otherwise start_date. Sorted by most recent past first."""
+        logger.debug("Getting past events by end_date/start_date fallback")
+        today = date.today().isoformat()
+        collection = await self.get_collection()
+        cursor = (
+            collection.find({
+                "$or": [
+                    {"end_date": {"$lt": today}},
+                    {"end_date": {"$exists": False}, "start_date": {"$lt": today}},
+                    {"end_date": None, "start_date": {"$lt": today}},
+                ]
+            })
+            .sort("end_date", -1)
+            .limit(limit)
+        )
+        docs = await cursor.to_list(length=limit)
+        result = []
+        for doc in docs:
+            doc["id"] = str(doc["_id"])
+            del doc["_id"]
+            result.append(CalendarEventInDB(**doc))
+        return result
+
     # priority removed; high priority helper removed
 
     async def get_recurring_events(self) -> list[CalendarEventInDB]:
@@ -240,11 +264,10 @@ class CalendarEventRepository(BaseRepository):
 
         # event_type removed; no type counts
 
-        # Get upcoming events count
+        # Get upcoming events count (no status filtering)
         today = date.today()
         upcoming_count = await collection.count_documents({
-            "start_date": {"$gte": today.isoformat()},
-            "status": {"$in": [EventStatus.PLANNED, EventStatus.CONFIRMED]}
+            "start_date": {"$gte": today.isoformat()}
         })
 
         # Get this month's events count

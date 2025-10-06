@@ -28,7 +28,8 @@ class BaseRepository:
     async def create(self, obj_in: CreateSchemaType) -> ModelType:
         """Create a new document."""
         collection = await self.get_collection()
-        obj_dict = obj_in.model_dump()
+        # Use JSON mode to serialize dates/times to strings for MongoDB
+        obj_dict = obj_in.model_dump(mode="json")
         result = await collection.insert_one(obj_dict)
         return await self.get_by_id(str(result.inserted_id))
 
@@ -85,7 +86,8 @@ class BaseRepository:
     async def update(self, id: str, obj_in: UpdateSchemaType) -> ModelType | None:
         """Update document by ID."""
         collection = await self.get_collection()
-        obj_dict = obj_in.model_dump(exclude_unset=True)
+        # Serialize to JSON-safe values (e.g., dates) for MongoDB
+        obj_dict = obj_in.model_dump(exclude_unset=True, mode="json")
         if not obj_dict:
             return await self.get_by_id(id)
 

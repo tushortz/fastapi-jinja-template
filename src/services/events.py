@@ -125,7 +125,12 @@ class CalendarEventService:
             filter_dict["calendar_id"] = calendar_id
 
         events_in_db = await self.event_repo.get_many(
-            skip=skip, limit=limit, search=search, filter_dict=filter_dict
+            skip=skip,
+            limit=limit,
+            search=search,
+            filter_dict=filter_dict,
+            sort_by="start_date",
+            sort_order="desc",
         )
 
         return [CalendarEvent(id=event.id,
@@ -264,3 +269,28 @@ class CalendarEventService:
         except Exception as e:
             logger.error("Error getting event statistics: %s", str(e))
             raise
+
+    async def get_past_events(self, limit: int = 100) -> list[CalendarEvent]:
+        """Get past events using end_date when present (fallback start_date)."""
+        logger.debug("Getting past events by end date")
+        events_in_db = await self.event_repo.get_past_events_by_end_date(limit)
+        return [
+            CalendarEvent(
+                id=event.id,
+                title=event.title,
+                description=event.description,
+                start_date=event.start_date,
+                end_date=event.end_date,
+                start_time=event.start_time,
+                end_time=event.end_time,
+                is_all_day=event.is_all_day,
+                location=event.location,
+                organizer_id=event.organizer_id,
+                calendar_id=event.calendar_id,
+                color=event.color,
+                is_public=event.is_public,
+                created_at=event.created_at,
+                updated_at=event.updated_at,
+            )
+            for event in events_in_db
+        ]

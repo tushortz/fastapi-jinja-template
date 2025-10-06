@@ -183,12 +183,17 @@ class MemberRepository(BaseRepository):
     async def get_active_members(
         self, skip: int = 0, limit: int = 100
     ) -> list[MemberInDB]:
-        """Get active members only."""
-        logger.debug("Getting active members")
+        """
+        Get active members only, excluding those with status 'relocated'.
+        """
+        logger.debug("Getting active members excluding status 'relocated'")
         return await self.get_many(
             skip=skip,
             limit=limit,
-            filter_dict={"is_active": True, "status": MemberStatus.ACTIVE}
+            filter_dict={
+                "is_active": True,
+                "status": {"$ne": MemberStatus.RELOCATED}
+            }
         )
 
     async def count_by_status(self, status: MemberStatus) -> int:
@@ -209,7 +214,7 @@ class MemberRepository(BaseRepository):
         collection = await self.get_collection()
         return await collection.count_documents({
             "is_active": True,
-            "status": MemberStatus.ACTIVE
+            "status": MemberStatus.MEMBER
         })
 
     async def get_members_by_age_range(

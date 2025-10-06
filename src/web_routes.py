@@ -9,6 +9,8 @@ from fastapi.templating import Jinja2Templates
 from src.auth import (
     get_current_user_from_cookie, require_active_user, require_admin_user,
 )
+from src.models.members import MemberStatus
+from src.repositories.members import MemberRepository
 from src.services.attendance import AttendanceService
 from src.services.events import CalendarEventService
 from src.services.members import MemberService
@@ -123,6 +125,16 @@ async def admin_users(request: Request):
     )
 
 
+@router.get("/admin/backup", response_class=HTMLResponse, name="admin_backup")
+@require_admin_user
+async def admin_backup_page(request: Request):
+    """Admin backup and restore page."""
+    current_user = await get_current_user_from_cookie(request)
+    return templates.TemplateResponse(
+        "admin/backup.html", {"request": request, "user": current_user}
+    )
+
+
 @router.get("/profile", response_class=HTMLResponse, name="profile")
 @require_active_user
 async def profile_page(request: Request):
@@ -210,6 +222,28 @@ async def create_event_form_page(request: Request):
 
 
 
+@router.get("/events/{event_id}/view", response_class=HTMLResponse, name="event_view")
+@require_active_user
+async def event_view_page(request: Request, event_id: str):
+    """Event details page."""
+    current_user = await get_current_user_from_cookie(request)
+    return templates.TemplateResponse(
+        "events/view.html",
+        {"request": request, "user": current_user, "event_id": event_id},
+    )
+
+
+@router.get("/events/{event_id}/edit", response_class=HTMLResponse, name="event_edit_form")
+@require_active_user
+async def event_edit_form_page(request: Request, event_id: str):
+    """Edit event form page."""
+    current_user = await get_current_user_from_cookie(request)
+    return templates.TemplateResponse(
+        "events/edit.html",
+        {"request": request, "user": current_user, "event_id": event_id},
+    )
+
+
 @router.get("/events/today", response_class=HTMLResponse, name="events_today")
 @require_active_user
 async def events_today_page(request: Request):
@@ -217,6 +251,16 @@ async def events_today_page(request: Request):
     current_user = await get_current_user_from_cookie(request)
     return templates.TemplateResponse(
         "events/today.html", {"request": request, "user": current_user}
+    )
+
+
+@router.get("/events/past", response_class=HTMLResponse, name="events_past")
+@require_active_user
+async def events_past_page(request: Request):
+    """Past events page (end_date < today or start_date < today if no end_date)."""
+    current_user = await get_current_user_from_cookie(request)
+    return templates.TemplateResponse(
+        "events/past.html", {"request": request, "user": current_user}
     )
 
 
@@ -236,8 +280,8 @@ async def ui_events_upcoming(request: Request, limit: int = 5):
     """Return upcoming events for UI widgets (cookie auth)."""
     service = CalendarEventService()
     events = await service.get_upcoming_events(limit=limit)
-    # Pydantic models → dicts
-    return JSONResponse([e.model_dump() for e in events])
+    # Pydantic models → JSON-safe dicts
+    return JSONResponse([e.model_dump(mode="json") for e in events])
 
 
 @router.get("/members/list", response_class=HTMLResponse, name="members_list")
@@ -245,8 +289,52 @@ async def ui_events_upcoming(request: Request, limit: int = 5):
 async def members_list_page(request: Request):
     """Members list page."""
     current_user = await get_current_user_from_cookie(request)
+
+    # Query params
+    qp = request.query_params
+    try:
+        skip = int(qp.get("skip", 0))
+    except ValueError:
+        skip = 0
+    try:
+        limit = int(qp.get("limit", 25))
+    except ValueError:
+        limit = 25
+    search = qp.get("search") or None
+    status_filter = qp.get("status") or ""
+    role_filter = qp.get("role") or ""
+
+    # Load members via service (filters limited to search for now)
+    member_service = MemberService()
+    members = await member_service.get_members(skip=skip, limit=limit, search=search)
+    # Exclude relocated or inactive in UI layer
+    members = [m for m in members if m.is_active and m.status != MemberStatus.RELOCATED]
+
+    # Count total (apply same search plus active/relocated filters)
+    repo = MemberRepository()
+    filter_dict: dict[str, object] = {"is_active": True, "status": {"$ne": MemberStatus.RELOCATED}}
+    if search:
+        filter_dict["$or"] = [
+            {"first_name": {"$regex": search, "$options": "i"}},
+            {"last_name": {"$regex": search, "$options": "i"}},
+            {"email": {"$regex": search, "$options": "i"}},
+            {"phone": {"$regex": search, "$options": "i"}},
+        ]
+    total_count = await repo.count(filter_dict)
+
     return templates.TemplateResponse(
-        "members/list.html", {"request": request, "user": current_user}
+        "members/list.html",
+        {
+            "request": request,
+            "user": current_user,
+            "members": members,
+            "total_count": total_count,
+            "skip": skip,
+            "limit": limit,
+            "search": search or "",
+            "status_filter": status_filter,
+            "role_filter": role_filter,
+        },
     )
 
 
@@ -257,6 +345,29 @@ async def create_member_form_page(request: Request):
     current_user = await get_current_user_from_cookie(request)
     return templates.TemplateResponse(
         "members/create.html", {"request": request, "user": current_user}
+    )
+
+
+@router.get("/members/{member_id}/view", response_class=HTMLResponse, name="view_member")
+@require_active_user
+async def view_member_page(request: Request, member_id: str):
+    """Member details page."""
+    current_user = await get_current_user_from_cookie(request)
+    return templates.TemplateResponse(
+        "members/view.html", {"request": request, "user": current_user, "member_id": member_id}
+    )
+
+
+@router.get("/members/{member_id}/edit", response_class=HTMLResponse, name="edit_member_form")
+@require_active_user
+async def edit_member_form_page(request: Request, member_id: str):
+    """Edit member form page (loads member into template context)."""
+    current_user = await get_current_user_from_cookie(request)
+    service = MemberService()
+    member = await service.get_member_by_id(member_id)
+    return templates.TemplateResponse(
+        "members/edit.html",
+        {"request": request, "user": current_user, "member": member},
     )
 
 

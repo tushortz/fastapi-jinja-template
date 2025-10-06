@@ -17,6 +17,17 @@ from src.services.attendance import AttendanceService
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/attendance", tags=["attendance"])
+@router.get("/enums/types", name="api_get_attendance_types")
+async def get_attendance_types() -> list[str]:
+    """Return list of attendance types (enum values)."""
+    return [t.value for t in AttendanceType]
+
+
+@router.get("/enums/statuses", name="api_get_attendance_statuses")
+async def get_attendance_statuses() -> list[str]:
+    """Return list of attendance statuses (enum values)."""
+    return [s.value for s in AttendanceStatus]
+
 
 
 @router.post("/", response_model=Attendance, status_code=status.HTTP_201_CREATED, name="api_create_attendance")

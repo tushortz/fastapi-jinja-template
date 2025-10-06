@@ -52,6 +52,28 @@
             </button>
           </div>
         </div>
+
+        <!-- Recent attendance for selected member -->
+        <div x-show="selectedMemberId && recent.length > 0" class="mt-4">
+          <h3 class="text-sm font-medium text-gray-700 mb-2">Recent Attendance</h3>
+          <ul class="divide-y divide-gray-200 bg-white rounded border">
+            <template x-for="att in recent" :key="att.id">
+              <li class="px-3 py-2 text-sm text-gray-700 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                  <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800" x-text="att.attendance_type.replace('_',' ').replace(/\b\w/g, l => l.toUpperCase())"></span>
+                  <span x-text="att.attendance_date"></span>
+                </div>
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
+                      :class="{
+                        'bg-green-100 text-green-800': att.status==='present',
+                        'bg-yellow-100 text-yellow-800': att.status==='late' || att.status==='excused',
+                        'bg-red-100 text-red-800': att.status==='absent'
+                      }"
+                      x-text="att.status.replace('_',' ').replace(/\b\w/g, l => l.toUpperCase())"></span>
+              </li>
+            </template>
+          </ul>
+        </div>
       </div>
 
       <!-- Service Information -->
@@ -63,32 +85,25 @@
             <input type="date" id="attendance_date" name="attendance_date" required
                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
           </div>
-          <div>
+          <div x-data="enumSelect('/api/attendance/enums/types')">
             <label for="attendance_type" class="block text-sm font-medium text-gray-700 mb-1">Service Type *</label>
             <select id="attendance_type" name="attendance_type" required
                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
               <option value="">Select Service Type</option>
-              <option value="sunday_service">Sunday Service</option>
-              <option value="wednesday_service">Wednesday Service</option>
-              <option value="prayer_meeting">Prayer Meeting</option>
-              <option value="bible_study">Bible Study</option>
-              <option value="youth_meeting">Youth Meeting</option>
-              <option value="children_church">Children Church</option>
-              <option value="choir_rehearsal">Choir Rehearsal</option>
-              <option value="special_event">Special Event</option>
-              <option value="other">Other</option>
+              <template x-for="v in values" :key="v">
+                <option :value="v" x-text="v.replace('_',' ').replace(/\b\w/g, l => l.toUpperCase())"></option>
+              </template>
             </select>
           </div>
           <!-- service_time removed -->
-          <div>
+          <div x-data="enumSelect('/api/attendance/enums/statuses')">
             <label for="status" class="block text-sm font-medium text-gray-700 mb-1">Attendance Status *</label>
             <select id="status" name="status" required
                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
               <option value="">Select Status</option>
-              <option value="present">Present</option>
-              <option value="absent">Absent</option>
-              <option value="late">Late</option>
-              <option value="excused">Excused</option>
+              <template x-for="v in values" :key="v">
+                <option :value="v" x-text="v.replace('_',' ').replace(/\b\w/g, l => l.toUpperCase())"></option>
+              </template>
             </select>
           </div>
         </div>
@@ -124,6 +139,24 @@
 // Set default date to today
 document.getElementById('attendance_date').value = new Date().toISOString().split('T')[0];
 
+// Generic enum loader for Alpine x-data
+function enumSelect(endpoint) {
+  return {
+    values: [],
+    async init() {
+      try {
+        const res = await apiCall(endpoint);
+        if (res.ok) {
+          this.values = await res.json();
+        }
+      } catch (e) {
+        console.error('Failed to load enum values from', endpoint, e);
+        this.values = [];
+      }
+    }
+  }
+}
+
 document.getElementById('attendanceForm').addEventListener('submit', async function(e) {
   e.preventDefault();
 
@@ -139,7 +172,7 @@ document.getElementById('attendanceForm').addEventListener('submit', async funct
 
   try {
     if (!data.member_id) {
-      alert('Please select a member from the search results.');
+      Alpine.store('toastStore')?.add('Please select a member from the search results.', 'error');
       return;
     }
 
@@ -153,11 +186,11 @@ document.getElementById('attendanceForm').addEventListener('submit', async funct
       window.location.href = '/dashboard/attendance/list';
     } else {
       const error = await response.json();
-      alert('Error recording attendance: ' + (error.detail || 'Unknown error'));
+      Alpine.store('toastStore')?.add('Error recording attendance: ' + (error.detail || 'Unknown error'), 'error');
     }
   } catch (error) {
     console.error('Error:', error);
-    alert('Error recording attendance. Please try again.');
+    Alpine.store('toastStore')?.add('Error recording attendance. Please try again.', 'error');
   }
 });
 
@@ -168,6 +201,7 @@ function memberSearch() {
     open: false,
     selectedMemberId: '',
     selectedMemberName: '',
+    recent: [],
 
     async search() {
       this.open = !!this.query && this.query.length >= 2;
@@ -194,6 +228,7 @@ function memberSearch() {
       this.query = this.selectedMemberName;
       this.open = false;
       this.results = [];
+      this.loadRecent();
     },
 
     clearSelection() {
@@ -202,6 +237,21 @@ function memberSearch() {
       this.query = '';
       this.results = [];
       this.open = false;
+      this.recent = [];
+    },
+
+    async loadRecent() {
+      if (!this.selectedMemberId) return;
+      try {
+        const res = await apiCall(`/api/attendance/member/${this.selectedMemberId}?limit=5`);
+        if (res.ok) {
+          this.recent = await res.json();
+        } else {
+          this.recent = [];
+        }
+      } catch (_) {
+        this.recent = [];
+      }
     }
   }
 }

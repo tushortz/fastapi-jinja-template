@@ -2,7 +2,6 @@
 
 from datetime import date
 from enum import Enum
-from typing import Any
 
 from pydantic import EmailStr, Field, field_validator
 
@@ -16,7 +15,6 @@ class MemberStatus(str, Enum):
     FIRST_TIMER = "first timer"
     MEMBER = "member"
     SHEPHERD = "shepherd"
-    INACTIVE = "inactive"
     VISITOR = "visitor"
     RELOCATED = "relocated"
 
@@ -76,7 +74,7 @@ class MemberBase(TimestampModel):
     first_name: str = Field(..., min_length=1, max_length=50)
     last_name: str | None = Field(None, max_length=50)
     email: EmailStr | None = None
-    phone: str | None = Field(None, max_length=20)
+    phone: str = Field(..., max_length=20)
     date_of_birth: date | None = None
     gender: Gender | None = None
     marital_status: MaritalStatus | None = None
@@ -94,9 +92,9 @@ class MemberBase(TimestampModel):
     baptism_date: date | None = None
     ministry: Ministry | None = None
     membership_date: date | None = None
-    status: MemberStatus = MemberStatus.MEMBER
-    role: MemberRole = MemberRole.MEMBER
-    notes: list[MemberNote] = Field(None, max_length=1000)
+    status: MemberStatus | None = MemberStatus.MEMBER
+    role: MemberRole | None = MemberRole.MEMBER
+    notes: list[MemberNote] = Field(default_factory=list, max_length=1000)
     is_active: bool = True
     first_attended: date | None = None
 
@@ -122,6 +120,22 @@ class MemberBase(TimestampModel):
         if v > date.today():
             raise ValueError("Date cannot be in the future")
         return v
+
+    @field_validator("role", mode="before")
+    @classmethod
+    def coerce_role_default(cls, v):
+        """Coerce empty or null role to default member role."""
+        if v is None:
+            return MemberRole.MEMBER
+        if isinstance(v, str) and not v.strip():
+            return MemberRole.MEMBER
+        return v
+
+    @field_validator("notes", mode="before")
+    @classmethod
+    def coerce_notes_default(cls, v):
+        """Ensure notes is a list even when null in stored data."""
+        return v if v is not None else []
 
 
 class MemberCreate(MemberBase):

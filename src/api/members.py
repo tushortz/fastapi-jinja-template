@@ -7,7 +7,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from src.auth import get_current_user
 from src.models.members import (
-    Member, MemberCreate, MemberRole, MemberStatus, MemberUpdate,
+    Gender, MaritalStatus, Member, MemberCreate, MemberRole, MemberStatus, MemberUpdate,
+    Ministry,
 )
 from src.models.users import User
 from src.services.members import MemberService
@@ -252,9 +253,41 @@ async def delete_member(
 # Note: HTML-rendering pages are defined under /dashboard in web_routes.py
 
 
-@router.get("/statuses", response_model=list[str], name="api_get_member_statuses")
+@router.get("/enums/statuses", response_model=list[str], name="api_get_member_statuses")
 async def get_member_statuses(
     current_user: User = Depends(get_current_user),
 ) -> list[str]:
     """Return available member statuses from the enum."""
     return [s.value for s in MemberStatus]
+
+
+@router.get("/enums/roles", response_model=list[str], name="api_get_member_roles")
+async def get_member_roles(
+    current_user: User = Depends(get_current_user),
+) -> list[str]:
+    """Return available member roles from the enum."""
+    return [r.value for r in MemberRole]
+
+
+@router.get("/enums/genders", response_model=list[str], name="api_get_member_genders")
+async def get_member_genders(
+    current_user: User = Depends(get_current_user),
+) -> list[str]:
+    """Return available genders from the enum."""
+    return [g.value for g in Gender]
+
+
+@router.get("/enums/marital-statuses", response_model=list[str], name="api_get_marital_statuses")
+async def get_marital_statuses(
+    current_user: User = Depends(get_current_user),
+) -> list[str]:
+    """Return available marital statuses from the enum."""
+    return [m.value for m in MaritalStatus]
+
+
+@router.get("/enums/ministries", response_model=list[str], name="api_get_ministries")
+async def get_ministries(
+    current_user: User = Depends(get_current_user),
+) -> list[str]:
+    """Return available ministries from the enum."""
+    return [m.value for m in Ministry]

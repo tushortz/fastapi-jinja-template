@@ -1,5 +1,89 @@
 {% extends "base.html" %}
 
+{% block title %}View Member{% endblock %}
+{% block page_title %}Member Details{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto" x-data="memberView('{{ member_id }}')">
+  <div class="bg-white shadow rounded-lg">
+    <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+      <h1 class="text-2xl font-bold text-gray-900">Member Details</h1>
+      <a href="{{ url_for('members_list') }}" class="text-gray-600 hover:text-gray-800"><i class="fas fa-arrow-left mr-2"></i>Back to Members</a>
+    </div>
+    <div class="p-6">
+      <div x-show="loading" class="text-center py-8">
+        <i class="fas fa-spinner fa-spin text-gray-400 text-2xl"></i>
+        <p class="text-sm text-gray-500 mt-2">Loading member...</p>
+      </div>
+
+      <template x-if="!loading && member">
+        <div class="space-y-6">
+          <div class="flex items-center space-x-4">
+            <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
+              <i class="fas fa-user text-blue-600 text-2xl"></i>
+            </div>
+            <div>
+              <h2 class="text-xl font-semibold text-gray-900" x-text="member.first_name + ' ' + (member.last_name || '')"></h2>
+              <p class="text-sm text-gray-500" x-text="(member.role || 'member').replace('_',' ').replace(/\b\w/g, l => l.toUpperCase())"></p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h3 class="text-sm font-medium text-gray-500 uppercase tracking-wide">Contact</h3>
+              <div class="mt-2 space-y-2 text-sm text-gray-700">
+                <div class="flex items-center" x-show="member.email"><i class="fas fa-envelope mr-2 text-gray-400"></i><span x-text="member.email"></span></div>
+                <div class="flex items-center" x-show="member.phone"><i class="fas fa-phone mr-2 text-gray-400"></i><span x-text="member.phone"></span></div>
+                <div class="flex items-start" x-show="member.address">
+                  <i class="fas fa-map-marker-alt mr-2 text-gray-400 mt-0.5"></i>
+                  <span x-text="[member.address, member.city, member.state, member.zip_code, member.country].filter(Boolean).join(', ')"></span>
+                </div>
+              </div>
+            </div>
+            <div>
+              <h3 class="text-sm font-medium text-gray-500 uppercase tracking-wide">Church</h3>
+              <div class="mt-2 space-y-2 text-sm text-gray-700">
+                <div class="flex items-center"><i class="fas fa-id-badge mr-2 text-gray-400"></i><span x-text="(member.status || '').replace('_',' ').replace(/\b\w/g, l => l.toUpperCase())"></span></div>
+                <div class="flex items-center" x-show="member.membership_date"><i class="fas fa-calendar-plus mr-2 text-gray-400"></i><span x-text="member.membership_date"></span></div>
+                <div class="flex items-center" x-show="member.baptism_date"><i class="fas fa-tint mr-2 text-gray-400"></i><span x-text="member.baptism_date"></span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </template>
+
+      <div x-show="!loading && !member" class="text-center py-8">
+        <i class="fas fa-exclamation-circle text-gray-400 text-2xl"></i>
+        <p class="text-sm text-gray-500 mt-2">Member not found.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('alpine:init', () => {
+    Alpine.data('memberView', (memberId) => ({
+      loading: true,
+      member: null,
+      async init() {
+        try {
+          const res = await apiCall(`/api/members/${memberId}`);
+          if (res.ok) {
+            this.member = await res.json();
+          }
+        } catch (e) {
+          console.error('Error loading member', e);
+        } finally {
+          this.loading = false;
+        }
+      }
+    }));
+  });
+</script>
+{% endblock %}
+
+{% extends "base.html" %}
+
 {% block title %}{{ member.full_name }} - Member Details{% endblock %}
 {% block page_title %}{{ member.full_name }}{% endblock %}
 

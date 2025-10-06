@@ -214,7 +214,6 @@ class MemberService:
                 id=member.id,
                 first_name=member.first_name,
                 last_name=member.last_name,
-                middle_name=member.middle_name,
                 email=member.email,
                 phone=member.phone,
                 date_of_birth=member.date_of_birth,

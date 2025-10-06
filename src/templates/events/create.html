@@ -189,11 +189,11 @@
             window.location.href = '/dashboard/events/list';
           } else {
             const error = await response.json();
-            alert('Error creating event: ' + (error.detail || 'Unknown error'));
+            Alpine.store('toastStore')?.add('Error creating event: ' + (error.detail || 'Unknown error'), 'error');
           }
         } catch (error) {
           console.error('Error creating event:', error);
-          alert('Error creating event. Please try again.');
+          Alpine.store('toastStore')?.add('Error creating event. Please try again.', 'error');
         } finally {
           this.loading = false;
         }
