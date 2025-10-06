@@ -358,6 +358,27 @@ async def view_member_page(request: Request, member_id: str):
     )
 
 
+@router.post("/members/insight", name="member_insight_api")
+@require_active_user
+async def members_ai_insight(request: Request):
+    """Generate AI insight for a member (cookie-auth UI endpoint)."""
+    await get_current_user_from_cookie(request)
+    try:
+        body = await request.json()
+        member_service = MemberService()
+        member_data = body.get("member") or {}
+        member_id = member_data.get("id")
+        if member_id:
+            member = await member_service.get_member_by_id(member_id)
+        else:
+            from src.models.members import Member
+            member = Member(**member_data)
+        insight = await member_service.generate_member_insight(member)
+        return JSONResponse({"insight": insight})
+    except Exception as exc:  # noqa: BLE001
+        logger.error("AI insight failed: %s", str(exc))
+        return JSONResponse({"detail": "Failed to generate insight"}, status_code=500)
+
 @router.get("/members/{member_id}/edit", response_class=HTMLResponse, name="edit_member_form")
 @require_active_user
 async def edit_member_form_page(request: Request, member_id: str):

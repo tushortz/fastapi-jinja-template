@@ -85,7 +85,7 @@
                   </div>
                 </div>
                 <div class="ml-4">
-                  <div class="text-sm font-medium text-gray-900">{{ member.full_name }}</div>
+                  <div class="text-sm font-medium text-gray-900">{{ member.first_name }}{% if member.last_name %} {{ member.last_name }}{% endif %}</div>
                   {% if member.membership_date %}
                   <div class="text-sm text-gray-500">Member since {{ member.membership_date.strftime('%Y') }}</div>
                   {% endif %}

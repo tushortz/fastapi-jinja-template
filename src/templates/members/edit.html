@@ -245,14 +245,14 @@ document.getElementById('memberForm').addEventListener('submit', async function(
   });
 
   try {
-    const response = await apiCall(`/members/{{ member.id }}`, {
+    const response = await apiCall(`/api/members/{{ member.id }}`, {
       method: 'PUT',
       body: JSON.stringify(data)
     });
 
     if (response.ok) {
       const member = await response.json();
-      window.location.href = `/members/${member.id}/view`;
+      window.location.href = `/dashboard/members/${member.id}/view`;
     } else {
       const error = await response.json();
       Alpine.store('toastStore')?.add('Error updating member: ' + (error.detail || 'Unknown error'), 'error');

@@ -1,13 +1,13 @@
 """Member service for business logic."""
 
 import logging
-from datetime import date
 from typing import Any
 
 from src.models.members import (
     Member, MemberCreate, MemberInDB, MemberRole, MemberStatus, MemberUpdate,
 )
 from src.repositories.members import MemberRepository
+from src.services.insights import MemberInsightService
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +45,6 @@ class MemberService:
             id=member_in_db.id,
             first_name=member_in_db.first_name,
             last_name=member_in_db.last_name,
-            middle_name=member_in_db.middle_name,
             email=member_in_db.email,
             phone=member_in_db.phone,
             date_of_birth=member_in_db.date_of_birth,
@@ -58,7 +57,6 @@ class MemberService:
             country=member_in_db.country,
             emergency_contact_name=member_in_db.emergency_contact_name,
             emergency_contact_phone=member_in_db.emergency_contact_phone,
-            emergency_contact_relationship=member_in_db.emergency_contact_relationship,
             occupation=member_in_db.occupation,
             employer=member_in_db.employer,
             education_level=member_in_db.education_level,
@@ -83,7 +81,6 @@ class MemberService:
             id=member_in_db.id,
             first_name=member_in_db.first_name,
             last_name=member_in_db.last_name,
-            middle_name=member_in_db.middle_name,
             email=member_in_db.email,
             phone=member_in_db.phone,
             date_of_birth=member_in_db.date_of_birth,
@@ -96,7 +93,6 @@ class MemberService:
             country=member_in_db.country,
             emergency_contact_name=member_in_db.emergency_contact_name,
             emergency_contact_phone=member_in_db.emergency_contact_phone,
-            emergency_contact_relationship=member_in_db.emergency_contact_relationship,
             occupation=member_in_db.occupation,
             employer=member_in_db.employer,
             education_level=member_in_db.education_level,
@@ -146,7 +142,6 @@ class MemberService:
             id=member_in_db.id,
             first_name=member_in_db.first_name,
             last_name=member_in_db.last_name,
-            middle_name=member_in_db.middle_name,
             email=member_in_db.email,
             phone=member_in_db.phone,
             date_of_birth=member_in_db.date_of_birth,
@@ -159,7 +154,6 @@ class MemberService:
             country=member_in_db.country,
             emergency_contact_name=member_in_db.emergency_contact_name,
             emergency_contact_phone=member_in_db.emergency_contact_phone,
-            emergency_contact_relationship=member_in_db.emergency_contact_relationship,
             occupation=member_in_db.occupation,
             employer=member_in_db.employer,
             education_level=member_in_db.education_level,
@@ -226,7 +220,6 @@ class MemberService:
                 country=member.country,
                 emergency_contact_name=member.emergency_contact_name,
                 emergency_contact_phone=member.emergency_contact_phone,
-                emergency_contact_relationship=member.emergency_contact_relationship,
                 occupation=member.occupation,
                 employer=member.employer,
                 education_level=member.education_level,
@@ -245,21 +238,26 @@ class MemberService:
     async def get_active_members(
         self, skip: int = 0, limit: int = 100
     ) -> list[Member]:
-        """Get active members only."""
-        logger.debug("Getting active members")
-        return await self.get_members(skip=skip, limit=limit, status=MemberStatus.ACTIVE)
-
-    async def get_members_by_status(self, status: MemberStatus) -> list[Member]:
-        """Get members by status."""
-        logger.debug("Getting members by status: %s", status)
-        members_in_db = await self.member_repo.get_by_status(status)
-
+        """
+        Get active members only, excluding those with status 'relocated' or 'outreach'.
+        """
+        logger.debug(
+            "Getting active members excluding status 'relocated' and 'outreach'"
+        )
+        filter_dict: dict[str, Any] = {
+            "is_active": True,
+            "status": {
+                "$nin": [MemberStatus.RELOCATED, MemberStatus.OUTREACH]
+            },
+        }
+        members_in_db = await self.member_repo.get_many(
+            skip=skip, limit=limit, filter_dict=filter_dict
+        )
         return [
             Member(
                 id=member.id,
                 first_name=member.first_name,
                 last_name=member.last_name,
-                middle_name=member.middle_name,
                 email=member.email,
                 phone=member.phone,
                 date_of_birth=member.date_of_birth,
@@ -272,7 +270,43 @@ class MemberService:
                 country=member.country,
                 emergency_contact_name=member.emergency_contact_name,
                 emergency_contact_phone=member.emergency_contact_phone,
-                emergency_contact_relationship=member.emergency_contact_relationship,
+                occupation=member.occupation,
+                employer=member.employer,
+                education_level=member.education_level,
+                baptism_date=member.baptism_date,
+                membership_date=member.membership_date,
+                status=member.status,
+                role=member.role,
+                notes=member.notes,
+                is_active=member.is_active,
+                created_at=member.created_at,
+                updated_at=member.updated_at,
+            )
+            for member in members_in_db
+        ]
+
+    async def get_members_by_status(self, status: MemberStatus) -> list[Member]:
+        """Get members by status."""
+        logger.debug("Getting members by status: %s", status)
+        members_in_db = await self.member_repo.get_by_status(status)
+
+        return [
+            Member(
+                id=member.id,
+                first_name=member.first_name,
+                last_name=member.last_name,
+                email=member.email,
+                phone=member.phone,
+                date_of_birth=member.date_of_birth,
+                gender=member.gender,
+                marital_status=member.marital_status,
+                address=member.address,
+                city=member.city,
+                state=member.state,
+                zip_code=member.zip_code,
+                country=member.country,
+                emergency_contact_name=member.emergency_contact_name,
+                emergency_contact_phone=member.emergency_contact_phone,
                 occupation=member.occupation,
                 employer=member.employer,
                 education_level=member.education_level,
@@ -298,7 +332,6 @@ class MemberService:
                 id=member.id,
                 first_name=member.first_name,
                 last_name=member.last_name,
-                middle_name=member.middle_name,
                 email=member.email,
                 phone=member.phone,
                 date_of_birth=member.date_of_birth,
@@ -311,7 +344,6 @@ class MemberService:
                 country=member.country,
                 emergency_contact_name=member.emergency_contact_name,
                 emergency_contact_phone=member.emergency_contact_phone,
-                emergency_contact_relationship=member.emergency_contact_relationship,
                 occupation=member.occupation,
                 employer=member.employer,
                 education_level=member.education_level,
@@ -337,7 +369,6 @@ class MemberService:
                 id=member.id,
                 first_name=member.first_name,
                 last_name=member.last_name,
-                middle_name=member.middle_name,
                 email=member.email,
                 phone=member.phone,
                 date_of_birth=member.date_of_birth,
@@ -350,7 +381,6 @@ class MemberService:
                 country=member.country,
                 emergency_contact_name=member.emergency_contact_name,
                 emergency_contact_phone=member.emergency_contact_phone,
-                emergency_contact_relationship=member.emergency_contact_relationship,
                 occupation=member.occupation,
                 employer=member.employer,
                 education_level=member.education_level,
@@ -376,7 +406,6 @@ class MemberService:
                 id=member.id,
                 first_name=member.first_name,
                 last_name=member.last_name,
-                middle_name=member.middle_name,
                 email=member.email,
                 phone=member.phone,
                 date_of_birth=member.date_of_birth,
@@ -389,7 +418,6 @@ class MemberService:
                 country=member.country,
                 emergency_contact_name=member.emergency_contact_name,
                 emergency_contact_phone=member.emergency_contact_phone,
-                emergency_contact_relationship=member.emergency_contact_relationship,
                 occupation=member.occupation,
                 employer=member.employer,
                 education_level=member.education_level,
@@ -482,3 +510,8 @@ class MemberService:
         except Exception as e:
             logger.error("Error getting member statistics: %s", str(e))
             raise
+
+    async def generate_member_insight(self, member: Member) -> str:
+        """Generate AI insight for a member."""
+        insight_service = MemberInsightService()
+        return await insight_service.generate_member_insights(member)

@@ -209,9 +209,9 @@ class Member(MemberBase):
     @property
     def full_name(self) -> str:
         """Get full name of the member."""
-        if self.last_name:
-            return f"{self.first_name} {self.last_name}"
-        return f"{self.first_name} {self.last_name}"
+        if self.last_name and self.last_name.strip():
+            return f"{self.first_name} {self.last_name}".strip()
+        return self.first_name
 
     @property
     def age(self) -> int | None:
