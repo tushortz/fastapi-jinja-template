@@ -1,0 +1,261 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - Project{% endblock %}
+
+{% block content %}
+<!-- Include Modal Component -->
+{% include "components/modal.html" %}
+<div class="space-y-6" x-data="stats()" x-init="init()">
+  <!-- Admin Header -->
+  <div class="bg-white overflow-hidden shadow rounded-lg">
+    <div class="px-4 py-5 sm:p-6">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <i class="fas fa-cog text-blue-600 text-3xl"></i>
+          </div>
+          <div class="ml-5 w-0 flex-1">
+            <dl>
+              <dt class="text-sm font-medium text-gray-500 truncate">
+                Admin Dashboard
+              </dt>
+              <dd class="text-lg font-medium text-gray-900">
+                System Management
+              </dd>
+            </dl>
+          </div>
+        </div>
+        <button @click="loadStats()" :disabled="loading"
+          class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed">
+          <i :class="loading ? 'fas fa-spinner fa-spin' : 'fas fa-sync-alt'" class="mr-2"></i>
+          <span x-text="loading ? 'Refreshing...' : 'Refresh Stats'"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Admin Stats -->
+  <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+    <div class="bg-white overflow-hidden shadow rounded-lg">
+      <div class="p-5">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <i class="fas fa-user-check text-yellow-600 text-2xl"></i>
+          </div>
+          <div class="ml-5 w-0 flex-1">
+            <dl>
+              <dt class="text-sm font-medium text-gray-500 truncate">
+                Active Users
+              </dt>
+              <dd class="text-lg font-medium text-gray-900" x-text="activeUsers" x-show="!loading">
+                0
+              </dd>
+              <dd class="text-lg font-medium text-gray-500" x-show="loading">
+                <i class="fas fa-spinner fa-spin"></i>
+              </dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white overflow-hidden shadow rounded-lg">
+      <div class="p-5">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <i class="fas fa-quote-right text-green-600 text-2xl"></i>
+          </div>
+          <div class="ml-5 w-0 flex-1">
+            <dl>
+              <dt class="text-sm font-medium text-gray-500 truncate">
+                Total lorem ipsum
+              </dt>
+              <dd class="text-lg font-medium text-gray-900" x-text="" x-show="!loading">
+                0
+              </dd>
+              <dd class="text-lg font-medium text-gray-500" x-show="loading">
+                <i class="fas fa-spinner fa-spin"></i>
+              </dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white overflow-hidden shadow rounded-lg">
+      <div class="p-5">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <i class="fas fa-book text-purple-600 text-2xl"></i>
+          </div>
+          <div class="ml-5 w-0 flex-1">
+            <dl>
+              <dt class="text-sm font-medium text-gray-500 truncate">
+                Total lorem ipsum
+              </dt>
+              <dd class="text-lg font-medium text-gray-900" x-text="" x-show="!loading">
+                0
+              </dd>
+              <dd class="text-lg font-medium text-gray-500" x-show="loading">
+                <i class="fas fa-spinner fa-spin"></i>
+              </dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Admin Actions -->
+  <div class="bg-white shadow rounded-lg">
+    <div class="px-4 py-5 sm:p-6">
+      <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">
+        Admin Actions
+      </h3>
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <a href="{{ url_for('admin_users') }}"
+          class="relative group bg-white p-6 focus-within:ring-2 focus-within:ring-inset focus-within:ring-blue-500 rounded-lg border border-gray-300 hover:border-gray-400">
+          <div>
+            <span class="rounded-lg inline-flex p-3 bg-blue-50 text-blue-700 ring-4 ring-white">
+              <i class="fas fa-users text-xl"></i>
+            </span>
+          </div>
+          <div class="mt-4">
+            <h3 class="text-lg font-medium">
+              <span class="absolute inset-0" aria-hidden="true"></span>
+              Manage Users
+            </h3>
+            <p class="mt-2 text-sm text-gray-500">
+              View, edit, and manage user accounts
+            </p>
+          </div>
+        </a>
+
+        <a href="#"
+          class="relative group bg-white p-6 focus-within:ring-2 focus-within:ring-inset focus-within:ring-green-500 rounded-lg border border-gray-300 hover:border-gray-400">
+          <div>
+            <span class="rounded-lg inline-flex p-3 bg-green-50 text-green-700 ring-4 ring-white">
+              <i class="fas fa-quote-right text-xl"></i>
+            </span>
+          </div>
+          <div class="mt-4">
+            <h3 class="text-lg font-medium">
+              <span class="absolute inset-0" aria-hidden="true"></span>
+              All lorem ipsum
+            </h3>
+            <p class="mt-2 text-sm text-gray-500">
+              View and manage all quotes in the system
+            </p>
+          </div>
+        </a>
+
+        <a href="#"
+          class="relative group bg-white p-6 focus-within:ring-2 focus-within:ring-inset focus-within:ring-purple-500 rounded-lg border border-gray-300 hover:border-gray-400">
+          <div>
+            <span class="rounded-lg inline-flex p-3 bg-purple-50 text-purple-700 ring-4 ring-white">
+              <i class="fas fa-book text-xl"></i>
+            </span>
+          </div>
+          <div class="mt-4">
+            <h3 class="text-lg font-medium">
+              <span class="absolute inset-0" aria-hidden="true"></span>
+              All lorem ipsum
+            </h3>
+            <p class="mt-2 text-sm text-gray-500">
+              View and manage all books in the system
+            </p>
+          </div>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Activity -->
+  <div class="bg-white shadow rounded-lg">
+    <div class="px-4 py-5 sm:p-6">
+      <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">
+        Recent Activity
+      </h3>
+      <div class="space-y-4" x-data="recentActivity()" x-init="loadRecentActivity()">
+        <div x-show="loading" class="text-center py-4">
+          <i class="fas fa-spinner fa-spin text-gray-400"></i>
+        </div>
+        <div x-show="!loading && activities.length === 0" class="text-center py-4 text-gray-500">
+          No recent activity
+        </div>
+        <template x-for="activity in activities" :key="activity.id">
+          <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+            <div class="flex-shrink-0">
+              <i class="fas fa-circle text-blue-500 text-xs"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm text-gray-900" x-text="activity.description"></p>
+              <p class="text-xs text-gray-500" x-text="activity.timestamp"></p>
+            </div>
+          </div>
+        </template>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+  function recentActivity() {
+    return {
+      activities: [],
+      loading: true,
+
+      async loadRecentActivity() {
+        try {
+          // This would typically fetch from an activity log endpoint
+          // For now, we'll simulate with recent lorem ipsum
+          const response = await apiCall('#');
+          if (response.ok) {
+            const data = await response.json();
+          }
+        } catch (error) {
+          // console.error('Error loading recent activity:', error);
+        } finally {
+          this.loading = false;
+        }
+      }
+    }
+  }
+
+  function stats() {
+    return {
+      activeUsers: 0,
+      loading: true,
+      initialized: false,
+
+      async init() {
+        if (this.initialized) {
+          return;
+        }
+        this.initialized = true;
+        await this.loadStats();
+      },
+
+      async loadStats() {
+        this.loading = true;
+        try {
+          const response = await apiCall('#');
+
+          if (response.ok) {
+            const stats = await response.json();
+            this.activeUsers = stats.active_users;
+          } else {
+            const errorText = await response.text();
+            showErrorAlert('Failed to load statistics');
+          }
+        } catch (error) {
+          showErrorAlert('Error loading statistics');
+        } finally {
+          this.loading = false;
+        }
+      }
+    }
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,134 @@
+<!-- Reusable Modal Component -->
+<div id="modal-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden" x-data="{
+         show: false,
+         modalTitle: '',
+         modalMessage: '',
+         modalCallback: null
+     }" x-show="show" @click="show = false">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4" @click.stop>
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900" x-text="modalTitle"></h3>
+                    <button @click="show = false" class="text-gray-400 hover:text-gray-600 transition-colors">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+
+                <div class="mb-6">
+                    <p class="text-gray-700" x-text="modalMessage"></p>
+                </div>
+
+                <div class="flex justify-end space-x-3">
+                    <button @click="show = false; modalCallback && modalCallback(false)"
+                      class="px-4 py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors">
+                        Cancel
+                    </button>
+                    <button @click="show = false; modalCallback && modalCallback(true)"
+                      class="px-4 py-2 bg-red-600 text-white hover:bg-red-700 rounded-md transition-colors">
+                        Confirm
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CSS Alert Component -->
+<div id="alert-container" class="fixed top-4 right-4 z-50 space-y-2">
+    <!-- Alerts will be dynamically inserted here -->
+</div>
+
+<script>
+    // Modal functionality
+    window.showConfirmModal = function (title, message, callback) {
+        const modal = document.getElementById('modal-overlay');
+        const modalData = modal._x_dataStack[0];
+
+        modalData.modalTitle = title;
+        modalData.modalMessage = message;
+        modalData.modalCallback = callback;
+        modalData.show = true;
+
+        modal.classList.remove('hidden');
+    };
+
+    window.hideModal = function () {
+        const modal = document.getElementById('modal-overlay');
+        const modalData = modal._x_dataStack[0];
+
+        modalData.show = false;
+        modal.classList.add('hidden');
+    };
+
+    // CSS Alert functionality
+    window.showAlert = function (message, type = 'info', duration = 5000) {
+        const alertContainer = document.getElementById('alert-container');
+        const alertId = 'alert-' + Date.now();
+
+        const alertTypes = {
+            'success': 'bg-green-500 text-white',
+            'error': 'bg-red-500 text-white',
+            'warning': 'bg-yellow-500 text-white',
+            'info': 'bg-blue-500 text-white'
+        };
+
+        const alertClass = alertTypes[type] || alertTypes['info'];
+
+        const alertElement = document.createElement('div');
+        alertElement.id = alertId;
+        alertElement.className = `${alertClass} px-6 py-3 rounded-lg shadow-lg flex items-center justify-between max-w-sm transform transition-all duration-300 ease-in-out`;
+        alertElement.style.transform = 'translateX(100%)';
+
+        alertElement.innerHTML = `
+        <div class="flex items-center">
+            <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : type === 'warning' ? 'exclamation-triangle' : 'info-circle'} mr-2"></i>
+            <span>${message}</span>
+        </div>
+        <button onclick="hideAlert('${alertId}')" class="ml-4 text-white hover:text-gray-200 transition-colors">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+
+        alertContainer.appendChild(alertElement);
+
+        // Animate in
+        setTimeout(() => {
+            alertElement.style.transform = 'translateX(0)';
+        }, 100);
+
+        // Auto-hide after duration
+        if (duration > 0) {
+            setTimeout(() => {
+                hideAlert(alertId);
+            }, duration);
+        }
+    };
+
+    window.hideAlert = function (alertId) {
+        const alertElement = document.getElementById(alertId);
+        if (alertElement) {
+            alertElement.style.transform = 'translateX(100%)';
+            setTimeout(() => {
+                alertElement.remove();
+            }, 300);
+        }
+    };
+
+    // Convenience functions
+    window.showSuccessAlert = function (message, duration = 5000) {
+        showAlert(message, 'success', duration);
+    };
+
+    window.showErrorAlert = function (message, duration = 5000) {
+        showAlert(message, 'error', duration);
+    };
+
+    window.showWarningAlert = function (message, duration = 5000) {
+        showAlert(message, 'warning', duration);
+    };
+
+    window.showInfoAlert = function (message, duration = 5000) {
+        showAlert(message, 'info', duration);
+    };
+</script>

@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block title %}Register - Project{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-md w-full space-y-8">
+    <div>
+      <div class="mx-auto h-12 w-12 flex items-center justify-center rounded-full bg-blue-100">
+        <i class="fas fa-user-plus text-blue-600 text-2xl"></i>
+      </div>
+      <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
+        Create your account
+      </h2>
+      <p class="mt-2 text-center text-sm text-gray-600">
+        Or
+        <a href="{{ url_for('login') }}" class="font-medium text-blue-600 hover:text-blue-500">
+          sign in to your existing account
+        </a>
+      </p>
+    </div>
+    <form class="mt-8 space-y-6" x-data="registerForm()" @submit.prevent="register">
+      <div class="space-y-4">
+        <div>
+          <label for="email" class="block text-sm font-medium text-gray-700">Email address</label>
+          <input id="email" name="email" type="email" autocomplete="email" required
+            class="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            placeholder="Email address" x-model="form.email">
+        </div>
+        <div>
+          <label for="username" class="block text-sm font-medium text-gray-700">Username</label>
+          <input id="username" name="username" type="text" autocomplete="username" required
+            class="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            placeholder="Username" x-model="form.username">
+        </div>
+        <div>
+          <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+          <input id="password" name="password" type="password" autocomplete="new-password" required
+            class="mt-1 appearance-none relative block w-full px-3 py-2 border placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            :class="form.password && form.password.length > 72 ? 'border-yellow-300 focus:ring-yellow-500 focus:border-yellow-500' : 'border-gray-300'"
+            placeholder="Password (minimum 8 characters)" x-model="form.password">
+          <div x-show="form.password && form.password.length > 72" class="mt-1 text-sm text-yellow-600">
+            Warning: Password is longer than 72 characters and will be truncated for security
+          </div>
+          <div x-show="form.password" class="mt-1 text-xs text-gray-500">
+            Length: <span x-text="form.password.length"></span> characters
+          </div>
+        </div>
+        <div>
+          <label for="confirm-password" class="block text-sm font-medium text-gray-700">Confirm
+            Password</label>
+          <input id="confirm-password" name="confirm-password" type="password" autocomplete="new-password" required
+            class="mt-1 appearance-none relative block w-full px-3 py-2 border placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            :class="form.confirmPassword && form.password !== form.confirmPassword ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300'"
+            placeholder="Confirm password" x-model="form.confirmPassword">
+          <div x-show="form.confirmPassword && form.password !== form.confirmPassword"
+            class="mt-1 text-sm text-red-600">
+            Passwords do not match
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <button type="submit" :disabled="loading || !isFormValid"
+          class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50">
+          <span class="absolute left-0 inset-y-0 flex items-center pl-3">
+            <i class="fas fa-user-plus text-blue-500 group-hover:text-blue-400" aria-hidden="true"></i>
+          </span>
+          <span x-show="!loading">Create account</span>
+          <span x-show="loading">
+            <i class="fas fa-spinner fa-spin mr-2"></i>Creating account...
+          </span>
+        </button>
+      </div>
+
+      <div x-show="error" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+        <span x-text="error"></span>
+      </div>
+
+      <div x-show="success" class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
+        <span x-text="success"></span>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  function registerForm() {
+    return {
+      form: {
+        email: '',
+        username: '',
+        password: '',
+        confirmPassword: ''
+      },
+      loading: false,
+      error: '',
+      success: '',
+
+      get isFormValid() {
+        return this.form.email &&
+          this.form.username &&
+          this.form.password &&
+          this.form.confirmPassword &&
+          this.form.password === this.form.confirmPassword &&
+          this.form.password.length >= 8;
+      },
+
+      get passwordMismatch() {
+        return this.form.confirmPassword && this.form.password !== this.form.confirmPassword;
+      },
+
+      get passwordTooLong() {
+        return this.form.password && this.form.password.length > 72;
+      },
+
+      async register() {
+        this.loading = true;
+        this.error = '';
+        this.success = '';
+
+        // Check password match
+        if (this.form.password !== this.form.confirmPassword) {
+          this.error = 'Passwords do not match. Please ensure both password fields are identical.';
+          this.loading = false;
+          return;
+        }
+
+        // Check password length
+        if (this.form.password.length < 8) {
+          this.error = 'Password must be at least 8 characters long.';
+          this.loading = false;
+          return;
+        }
+
+        try {
+          const response = await fetch('{{ url_for("api_register") }}', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              email: this.form.email,
+              username: this.form.username,
+              password: this.form.password
+            })
+          });
+
+          const data = await response.json();
+
+          if (response.ok) {
+            this.success = 'Account created successfully! Redirecting to login...';
+            setTimeout(() => {
+              window.location.href = '{{ url_for("login") }}';
+            }, 2000);
+          } else {
+            this.error = data.detail || 'Registration failed';
+          }
+        } catch (error) {
+          this.error = 'An error occurred during registration';
+        } finally {
+          this.loading = false;
+        }
+      }
+    }
+  }
+</script>
+{% endblock %}

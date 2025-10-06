@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+
+{% block title %}Profile - {{ user.username }}{% endblock %}
+
+{% block content %}
+<!-- Include Modal Component -->
+{% include "components/modal.html" %}
+
+<div class="space-y-6">
+  <!-- Header -->
+  <div class="bg-white overflow-hidden shadow rounded-lg">
+    <div class="px-4 py-5 sm:p-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900">Profile Settings</h1>
+          <p class="mt-1 text-sm text-gray-500">Manage your account information and preferences</p>
+        </div>
+        <a href="{{ url_for('dashboard') }}"
+          class="bg-gray-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-700">
+          <i class="fas fa-arrow-left mr-2"></i>Back to Dashboard
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Profile Form -->
+  <div class="bg-white shadow overflow-hidden sm:rounded-md">
+    <div class="px-4 py-5 sm:p-6">
+      <div x-data="profileManagement()" x-init="loadUserProfile()">
+        <form @submit.prevent="updateProfile()" class="space-y-8">
+          <!-- Basic Information -->
+          <div class="profile-section">
+            <h3 class="profile-section-title">Basic Information</h3>
+            <div class="input-group grid">
+              <div class="form-group">
+                <label for="username" class="form-label required">Username</label>
+                <input type="text" id="username" x-model="profile.username" class="form-input"
+                  placeholder="Enter your username">
+                <p class="form-help">Your unique username</p>
+              </div>
+              <div class="form-group">
+                <label for="email" class="form-label required">Email</label>
+                <input type="email" id="email" x-model="profile.email" class="form-input"
+                  placeholder="Enter your email address">
+                <p class="form-help">Your email address</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Password Change -->
+          <div class="profile-section">
+            <h3 class="profile-section-title">Change Password</h3>
+            <div class="input-group space-y-4">
+              <div class="form-group">
+                <label for="current_password" class="form-label">Current Password</label>
+                <input type="password" id="current_password" x-model="profile.current_password" class="form-input"
+                  placeholder="Enter your current password">
+                <p class="form-help">Enter your current password to change it</p>
+              </div>
+              <div class="form-group">
+                <label for="new_password" class="form-label">New Password</label>
+                <input type="password" id="new_password" x-model="profile.new_password" class="form-input"
+                  placeholder="Enter your new password">
+                <p class="form-help">Minimum 8 characters</p>
+              </div>
+              <div class="form-group">
+                <label for="confirm_password" class="form-label">Confirm New Password</label>
+                <input type="password" id="confirm_password" x-model="profile.confirm_password" class="form-input"
+                  placeholder="Confirm your new password">
+              </div>
+            </div>
+          </div>
+
+          <!-- Account Status -->
+          <div class="profile-section">
+            <h3 class="profile-section-title">Account Status</h3>
+            <div class="bg-gray-50 px-4 py-3 rounded-md">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm font-medium text-gray-900">Account Status</p>
+                  <p class="text-sm text-gray-500">
+                    {% if user.is_active %}
+                    Your account is currently active
+                    {% else %}
+                    Your account is currently inactive
+                    {% endif %}
+                  </p>
+                </div>
+                {% if user.is_active %}
+                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                  Active
+                </span>
+                {% else %}
+                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                  Inactive
+                </span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
+          <!-- Submit Button -->
+          <div class="flex justify-end">
+            <button type="submit" :disabled="loading" class="btn-primary">
+              <i x-show="loading" class="fas fa-spinner fa-spin mr-2"></i>
+              <span x-text="loading ? 'Updating...' : 'Update Profile'"></span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function profileManagement() {
+    return {
+      profile: {
+        username: '',
+        email: '',
+        current_password: '',
+        new_password: '',
+        confirm_password: ''
+      },
+      loading: false,
+
+      loadUserProfile() {
+        // Load current user data
+        this.profile.username = '{{ user.username }}';
+        this.profile.email = '{{ user.email }}';
+      },
+
+      async updateProfile() {
+        // Validate password confirmation
+        if (this.profile.new_password && this.profile.new_password !== this.profile.confirm_password) {
+          showErrorAlert('New passwords do not match');
+          return;
+        }
+
+        // Validate password requirements
+        if (this.profile.new_password && this.profile.new_password.length < 8) {
+          showErrorAlert('New password must be at least 8 characters long');
+          return;
+        }
+
+        this.loading = true;
+        try {
+          // Prepare update data
+          const updateData = {
+            username: this.profile.username,
+            email: this.profile.email
+          };
+
+          // Only include password fields if new password is provided
+          if (this.profile.new_password) {
+            updateData.current_password = this.profile.current_password;
+            updateData.new_password = this.profile.new_password;
+          }
+
+          const response = await apiCall('{{ url_for("api_update_profile") }}', {
+            method: 'PUT',
+            body: JSON.stringify(updateData)
+          });
+
+          if (response.ok) {
+            showSuccessAlert('Profile updated successfully');
+            // Clear password fields
+            this.profile.current_password = '';
+            this.profile.new_password = '';
+            this.profile.confirm_password = '';
+          } else {
+            const error = await response.json();
+            showErrorAlert(error.detail || 'Failed to update profile');
+          }
+        } catch (error) {
+          // console.error('Error updating profile:', error);
+          showErrorAlert('Failed to update profile');
+        } finally {
+          this.loading = false;
+        }
+      }
+    }
+  }
+</script>
+{% endblock %}
