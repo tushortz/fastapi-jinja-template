@@ -1,11 +1,12 @@
 """Member service for business logic."""
 
 import logging
+from datetime import datetime
 from typing import Any
 
 from src.models.members import (
-    Member, MemberCreate, MemberInDB, MemberNote, MemberRole, MemberStatus,
-    MemberUpdate,
+    Member, MemberCreate, MemberInDB, MemberNote, MemberRole, MemberStatistics,
+    MemberStatus, MemberUpdate,
 )
 from src.repositories.members import MemberRepository
 from src.services.insights import MemberInsightService
@@ -56,8 +57,6 @@ class MemberService:
             state=member_in_db.state,
             zip_code=member_in_db.zip_code,
             country=member_in_db.country,
-            emergency_contact_name=member_in_db.emergency_contact_name,
-            emergency_contact_phone=member_in_db.emergency_contact_phone,
             occupation=member_in_db.occupation,
             employer=member_in_db.employer,
             education_level=member_in_db.education_level,
@@ -92,8 +91,6 @@ class MemberService:
             state=member_in_db.state,
             zip_code=member_in_db.zip_code,
             country=member_in_db.country,
-            emergency_contact_name=member_in_db.emergency_contact_name,
-            emergency_contact_phone=member_in_db.emergency_contact_phone,
             occupation=member_in_db.occupation,
             employer=member_in_db.employer,
             education_level=member_in_db.education_level,
@@ -105,6 +102,8 @@ class MemberService:
             is_active=member_in_db.is_active,
             created_at=member_in_db.created_at,
             updated_at=member_in_db.updated_at,
+            last_prayed_for=member_in_db.last_prayed_for,
+            last_visited=member_in_db.last_visited,
         )
 
     async def get_member_by_email(self, email: str) -> MemberInDB | None:
@@ -153,8 +152,6 @@ class MemberService:
             state=member_in_db.state,
             zip_code=member_in_db.zip_code,
             country=member_in_db.country,
-            emergency_contact_name=member_in_db.emergency_contact_name,
-            emergency_contact_phone=member_in_db.emergency_contact_phone,
             occupation=member_in_db.occupation,
             employer=member_in_db.employer,
             education_level=member_in_db.education_level,
@@ -219,8 +216,6 @@ class MemberService:
                 state=member.state,
                 zip_code=member.zip_code,
                 country=member.country,
-                emergency_contact_name=member.emergency_contact_name,
-                emergency_contact_phone=member.emergency_contact_phone,
                 occupation=member.occupation,
                 employer=member.employer,
                 education_level=member.education_level,
@@ -269,8 +264,6 @@ class MemberService:
                 state=member.state,
                 zip_code=member.zip_code,
                 country=member.country,
-                emergency_contact_name=member.emergency_contact_name,
-                emergency_contact_phone=member.emergency_contact_phone,
                 occupation=member.occupation,
                 employer=member.employer,
                 education_level=member.education_level,
@@ -306,8 +299,6 @@ class MemberService:
                 state=member.state,
                 zip_code=member.zip_code,
                 country=member.country,
-                emergency_contact_name=member.emergency_contact_name,
-                emergency_contact_phone=member.emergency_contact_phone,
                 occupation=member.occupation,
                 employer=member.employer,
                 education_level=member.education_level,
@@ -343,8 +334,6 @@ class MemberService:
                 state=member.state,
                 zip_code=member.zip_code,
                 country=member.country,
-                emergency_contact_name=member.emergency_contact_name,
-                emergency_contact_phone=member.emergency_contact_phone,
                 occupation=member.occupation,
                 employer=member.employer,
                 education_level=member.education_level,
@@ -380,8 +369,6 @@ class MemberService:
                 state=member.state,
                 zip_code=member.zip_code,
                 country=member.country,
-                emergency_contact_name=member.emergency_contact_name,
-                emergency_contact_phone=member.emergency_contact_phone,
                 occupation=member.occupation,
                 employer=member.employer,
                 education_level=member.education_level,
@@ -417,8 +404,6 @@ class MemberService:
                 state=member.state,
                 zip_code=member.zip_code,
                 country=member.country,
-                emergency_contact_name=member.emergency_contact_name,
-                emergency_contact_phone=member.emergency_contact_phone,
                 occupation=member.occupation,
                 employer=member.employer,
                 education_level=member.education_level,
@@ -478,7 +463,7 @@ class MemberService:
             logger.error("Error counting members by role: %s", str(e))
             raise
 
-    async def get_member_statistics(self) -> dict[str, Any]:
+    async def get_member_statistics(self) -> MemberStatistics:
         """Get member statistics."""
         logger.info("Getting member statistics")
         try:
@@ -499,15 +484,21 @@ class MemberService:
             birthdays_this_month = len(await self.get_birthdays_this_month())
             birthdays_today = len(await self.get_birthdays_today())
 
-            return {
-                "total_members": total_members,
-                "active_members": active_members,
-                "inactive_members": total_members - active_members,
-                "status_counts": status_counts,
-                "role_counts": role_counts,
-                "birthdays_this_month": birthdays_this_month,
-                "birthdays_today": birthdays_today,
-            }
+            return MemberStatistics(
+                total_members=total_members,
+                active_members=active_members,
+                inactive_members=total_members - active_members,
+                status_counts=status_counts,
+                role_counts=role_counts,
+                gender_counts={},  # TODO: Implement gender counts
+                marital_status_counts={},  # TODO: Implement marital status counts
+                ministry_counts={},  # TODO: Implement ministry counts
+                recent_registrations=0,  # TODO: Implement recent registrations
+                birthday_this_month=birthdays_this_month,
+                birthday_today=birthdays_today,
+                created_at=datetime.now(),
+                updated_at=datetime.now()
+            )
         except Exception as e:
             logger.error("Error getting member statistics: %s", str(e))
             raise
@@ -559,8 +550,6 @@ class MemberService:
             state=updated_member.state,
             zip_code=updated_member.zip_code,
             country=updated_member.country,
-            emergency_contact_name=updated_member.emergency_contact_name,
-            emergency_contact_phone=updated_member.emergency_contact_phone,
             occupation=updated_member.occupation,
             employer=updated_member.employer,
             education_level=updated_member.education_level,
@@ -628,8 +617,6 @@ class MemberService:
             state=updated_member.state,
             zip_code=updated_member.zip_code,
             country=updated_member.country,
-            emergency_contact_name=updated_member.emergency_contact_name,
-            emergency_contact_phone=updated_member.emergency_contact_phone,
             occupation=updated_member.occupation,
             employer=updated_member.employer,
             education_level=updated_member.education_level,
@@ -639,6 +626,121 @@ class MemberService:
             role=updated_member.role,
             notes=updated_member.notes,
             is_active=updated_member.is_active,
+            created_at=updated_member.created_at,
+            updated_at=updated_member.updated_at,
+        )
+    async def update_prayer_date(self, member_id: str, prayer_date: str) -> Member | None:
+        """Update the last prayed for date of a member."""
+        logger.info("Updating prayer date for member: %s", member_id)
+
+        # Get the current member
+        member_in_db = await self.member_repo.get_by_id(member_id)
+        if not member_in_db:
+            logger.warning("Member not found for updating prayer date: %s", member_id)
+            return None
+
+        # Parse the datetime string
+        try:
+            from datetime import datetime
+            parsed_date = datetime.fromisoformat(prayer_date.replace('Z', '+00:00'))
+        except ValueError as e:
+            logger.warning("Invalid prayer date format: %s", prayer_date)
+            return None
+
+        # Update the member with the new prayer date
+        member_update = MemberUpdate(last_prayed_for=parsed_date)
+        updated_member = await self.member_repo.update(member_id, member_update)
+
+        if not updated_member:
+            logger.warning("Failed to update member prayer date: %s", member_id)
+            return None
+
+        logger.info("Prayer date updated successfully for member: %s", member_id)
+
+        # Return as Member model
+        return Member(
+            id=updated_member.id,
+            first_name=updated_member.first_name,
+            last_name=updated_member.last_name,
+            email=updated_member.email,
+            phone=updated_member.phone,
+            date_of_birth=updated_member.date_of_birth,
+            gender=updated_member.gender,
+            marital_status=updated_member.marital_status,
+            address=updated_member.address,
+            city=updated_member.city,
+            state=updated_member.state,
+            zip_code=updated_member.zip_code,
+            country=updated_member.country,
+            occupation=updated_member.occupation,
+            employer=updated_member.employer,
+            education_level=updated_member.education_level,
+            baptism_date=updated_member.baptism_date,
+            membership_date=updated_member.membership_date,
+            status=updated_member.status,
+            role=updated_member.role,
+            notes=updated_member.notes,
+            is_active=updated_member.is_active,
+            last_prayed_for=updated_member.last_prayed_for,
+            last_visited=updated_member.last_visited,
+            created_at=updated_member.created_at,
+            updated_at=updated_member.updated_at,
+        )
+
+    async def update_visit_date(self, member_id: str, visit_date: str) -> Member | None:
+        """Update the last visited date of a member."""
+        logger.info("Updating visit date for member: %s", member_id)
+
+        # Get the current member
+        member_in_db = await self.member_repo.get_by_id(member_id)
+        if not member_in_db:
+            logger.warning("Member not found for updating visit date: %s", member_id)
+            return None
+
+        # Parse the datetime string
+        try:
+            from datetime import datetime
+            parsed_date = datetime.fromisoformat(visit_date.replace('Z', '+00:00'))
+        except ValueError as e:
+            logger.warning("Invalid visit date format: %s", visit_date)
+            return None
+
+        # Update the member with the new visit date
+        member_update = MemberUpdate(last_visited=parsed_date)
+        updated_member = await self.member_repo.update(member_id, member_update)
+
+        if not updated_member:
+            logger.warning("Failed to update member visit date: %s", member_id)
+            return None
+
+        logger.info("Visit date updated successfully for member: %s", member_id)
+
+        # Return as Member model
+        return Member(
+            id=updated_member.id,
+            first_name=updated_member.first_name,
+            last_name=updated_member.last_name,
+            email=updated_member.email,
+            phone=updated_member.phone,
+            date_of_birth=updated_member.date_of_birth,
+            gender=updated_member.gender,
+            marital_status=updated_member.marital_status,
+            address=updated_member.address,
+            city=updated_member.city,
+            state=updated_member.state,
+            zip_code=updated_member.zip_code,
+            country=updated_member.country,
+            occupation=updated_member.occupation,
+            employer=updated_member.employer,
+            education_level=updated_member.education_level,
+            baptism_date=updated_member.baptism_date,
+            membership_date=updated_member.membership_date,
+            status=updated_member.status,
+            role=updated_member.role,
+            notes=updated_member.notes,
+            is_active=updated_member.is_active,
+            last_prayed_for=updated_member.last_prayed_for,
+            last_visited=updated_member.last_visited,
             created_at=updated_member.created_at,
             updated_at=updated_member.updated_at,
         )

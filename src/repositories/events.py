@@ -4,7 +4,7 @@ import logging
 from datetime import date, datetime, timedelta
 from typing import Any
 
-from src.models.events import CalendarEventInDB
+from src.models.events import CalendarEventInDB, EventStatistics
 
 from .base import BaseRepository
 
@@ -255,7 +255,7 @@ class CalendarEventRepository(BaseRepository):
             "start_date": {"$gte": today.isoformat()}
         })
 
-    async def get_event_statistics(self) -> dict[str, Any]:
+    async def get_event_statistics(self) -> EventStatistics:
         """Get event statistics."""
         logger.debug("Getting event statistics")
         collection = await self.get_collection()
@@ -284,10 +284,58 @@ class CalendarEventRepository(BaseRepository):
             }
         })
 
-        return {
-            "status_counts": {},
-            "type_counts": {},
-            "upcoming_count": upcoming_count,
-            "this_month_count": this_month_count,
-            "total_count": await collection.count_documents({})
-        }
+        # Get next month's events count
+        if today.month == 12:
+            next_month_start = date(today.year + 1, 1, 1)
+            next_month_end = date(today.year + 1, 2, 1) - timedelta(days=1)
+        else:
+            next_month_start = date(today.year, today.month + 1, 1)
+            next_month_end = date(today.year, today.month + 2, 1) - timedelta(days=1)
+
+        next_month_count = await collection.count_documents({
+            "start_date": {
+                "$gte": next_month_start.isoformat(),
+                "$lte": next_month_end.isoformat()
+            }
+        })
+
+        # Get past events count
+        past_count = await collection.count_documents({
+            "start_date": {"$lt": today.isoformat()}
+        })
+
+        # Get all day events count
+        all_day_count = await collection.count_documents({
+            "is_all_day": True
+        })
+
+        # Get timed events count
+        timed_count = await collection.count_documents({
+            "is_all_day": False
+        })
+
+        # Get public events count
+        public_count = await collection.count_documents({
+            "is_public": True
+        })
+
+        # Get private events count
+        private_count = await collection.count_documents({
+            "is_public": False
+        })
+
+        total_count = await collection.count_documents({})
+
+        return EventStatistics(
+            total_events=total_count,
+            upcoming_events=upcoming_count,
+            past_events=past_count,
+            events_this_month=this_month_count,
+            events_next_month=next_month_count,
+            all_day_events=all_day_count,
+            timed_events=timed_count,
+            public_events=public_count,
+            private_events=private_count,
+            created_at=datetime.now(),
+            updated_at=datetime.now()
+        )

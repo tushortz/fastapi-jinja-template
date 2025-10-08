@@ -7,8 +7,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from src.auth import get_current_user
 from src.models.members import (
-    Gender, MaritalStatus, Member, MemberCreate, MemberNote, MemberRole, MemberStatus,
-    MemberUpdate, Ministry,
+    Gender, MaritalStatus, Member, MemberCreate, MemberNote, MemberRole,
+    MemberStatistics, MemberStatus, MemberUpdate, Ministry,
 )
 from src.models.users import User
 from src.services.members import MemberService
@@ -137,7 +137,7 @@ async def get_birthdays_today(
 @router.get("/statistics", name="api_get_member_statistics")
 async def get_member_statistics(
     current_user: User = Depends(get_current_user),
-) -> dict[str, Any]:
+) -> MemberStatistics:
     """Get member statistics."""
     logger.debug("Getting member statistics")
 
@@ -355,6 +355,80 @@ async def delete_member_note(
         raise
     except Exception as e:
         logger.error("Error deleting note from member: %s", str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error"
+        )
+
+
+@router.put("/{member_id}/prayer", response_model=Member, name="api_update_member_prayer")
+async def update_member_prayer(
+    member_id: str,
+    prayer_data: dict[str, str],
+    current_user: User = Depends(get_current_user),
+) -> Member:
+    """Update the last prayed for date of a member."""
+    logger.info("Updating prayer date for member: %s", member_id)
+
+    if not prayer_data.get("last_prayed_for"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Prayer date is required"
+        )
+
+    try:
+        member_service = MemberService()
+        member = await member_service.update_prayer_date(member_id, prayer_data["last_prayed_for"])
+        if not member:
+            logger.warning("Member not found for updating prayer date: %s", member_id)
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Member not found"
+            )
+
+        logger.info("Prayer date updated successfully for member: %s", member_id)
+        return member
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Error updating prayer date for member: %s", str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error"
+        )
+
+
+@router.put("/{member_id}/visit", response_model=Member, name="api_update_member_visit")
+async def update_member_visit(
+    member_id: str,
+    visit_data: dict[str, str],
+    current_user: User = Depends(get_current_user),
+) -> Member:
+    """Update the last visited date of a member."""
+    logger.info("Updating visit date for member: %s", member_id)
+
+    if not visit_data.get("last_visited"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Visit date is required"
+        )
+
+    try:
+        member_service = MemberService()
+        member = await member_service.update_visit_date(member_id, visit_data["last_visited"])
+        if not member:
+            logger.warning("Member not found for updating visit date: %s", member_id)
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Member not found"
+            )
+
+        logger.info("Visit date updated successfully for member: %s", member_id)
+        return member
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Error updating visit date for member: %s", str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal server error"

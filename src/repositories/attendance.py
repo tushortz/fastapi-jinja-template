@@ -4,7 +4,12 @@ import logging
 from datetime import date, datetime
 from typing import Any
 
-from src.models.attendance import AttendanceInDB, AttendanceStatus, AttendanceType
+from pydantic import BaseModel
+
+from src.models.attendance import (
+    AttendanceInDB, AttendanceStatistics, AttendanceStatus, AttendanceTrend,
+    AttendanceType, MemberAttendanceSummaryRepo, ServiceAttendanceSummaryRepo,
+)
 
 from .base import BaseRepository
 
@@ -94,7 +99,7 @@ class AttendanceRepository(BaseRepository):
         member_id: str,
         start_date: date,
         end_date: date,
-    ) -> dict[str, Any]:
+    ) -> MemberAttendanceSummaryRepo:
         """Get attendance summary for a member in a date range."""
         logger.debug(
             "Getting attendance summary for member %s from %s to %s",
@@ -123,45 +128,48 @@ class AttendanceRepository(BaseRepository):
         cursor = collection.aggregate(pipeline)
         results = await cursor.to_list(length=None)
 
-        summary = {
-            "member_id": member_id,
-            "start_date": start_date,
-            "end_date": end_date,
-            "total_services": 0,
-            "present_count": 0,
-            "absent_count": 0,
-            "late_count": 0,
-            "excused_count": 0,
-            "attendance_rate": 0.0
-        }
+        total_services = 0
+        present_count = 0
+        absent_count = 0
+        late_count = 0
+        excused_count = 0
 
         for result in results:
             status = result["_id"]
             count = result["count"]
-            summary["total_services"] += count
+            total_services += count
 
             if status == AttendanceStatus.PRESENT:
-                summary["present_count"] = count
+                present_count = count
             elif status == AttendanceStatus.ABSENT:
-                summary["absent_count"] = count
+                absent_count = count
             elif status == AttendanceStatus.LATE:
-                summary["late_count"] = count
+                late_count = count
             elif status == AttendanceStatus.EXCUSED:
-                summary["excused_count"] = count
+                excused_count = count
 
         # Calculate attendance rate
-        if summary["total_services"] > 0:
-            summary["attendance_rate"] = (
-                summary["present_count"] / summary["total_services"]
-            ) * 100
+        attendance_rate = (present_count / total_services * 100) if total_services > 0 else 0.0
 
-        return summary
+        return MemberAttendanceSummaryRepo(
+            member_id=member_id,
+            total_services=total_services,
+            present_count=present_count,
+            absent_count=absent_count,
+            late_count=late_count,
+            excused_count=excused_count,
+            attendance_rate=round(attendance_rate, 2),
+            start_date=start_date,
+            end_date=end_date,
+            created_at=datetime.now(),
+            updated_at=datetime.now()
+        )
 
     async def get_service_attendance_summary(
         self,
         attendance_date: date,
         attendance_type: AttendanceType,
-    ) -> dict[str, Any]:
+    ) -> ServiceAttendanceSummaryRepo:
         """Get attendance summary for a specific service."""
         logger.debug(
             "Getting service attendance summary for %s on %s",
@@ -187,38 +195,41 @@ class AttendanceRepository(BaseRepository):
         cursor = collection.aggregate(pipeline)
         results = await cursor.to_list(length=None)
 
-        summary = {
-            "service_date": attendance_date,
-            "service_type": attendance_type,
-            "total_members": 0,
-            "present_members": 0,
-            "absent_members": 0,
-            "late_members": 0,
-            "excused_members": 0,
-            "attendance_rate": 0.0
-        }
+        total_members = 0
+        present_members = 0
+        absent_members = 0
+        late_members = 0
+        excused_members = 0
 
         for result in results:
             status = result["_id"]
             count = result["count"]
-            summary["total_members"] += count
+            total_members += count
 
             if status == AttendanceStatus.PRESENT:
-                summary["present_members"] = count
+                present_members = count
             elif status == AttendanceStatus.ABSENT:
-                summary["absent_members"] = count
+                absent_members = count
             elif status == AttendanceStatus.LATE:
-                summary["late_members"] = count
+                late_members = count
             elif status == AttendanceStatus.EXCUSED:
-                summary["excused_members"] = count
+                excused_members = count
 
         # Calculate attendance rate
-        if summary["total_members"] > 0:
-            summary["attendance_rate"] = (
-                summary["present_members"] / summary["total_members"]
-            ) * 100
+        attendance_rate = (present_members / total_members * 100) if total_members > 0 else 0.0
 
-        return summary
+        return ServiceAttendanceSummaryRepo(
+            service_date=attendance_date,
+            service_type=attendance_type,
+            total_members=total_members,
+            present_members=present_members,
+            absent_members=absent_members,
+            late_members=late_members,
+            excused_members=excused_members,
+            attendance_rate=round(attendance_rate, 2),
+            created_at=datetime.now(),
+            updated_at=datetime.now()
+        )
 
     async def check_attendance_exists(
         self,
@@ -304,7 +315,7 @@ class AttendanceRepository(BaseRepository):
 
     async def get_attendance_trends(
         self, start_date: date, end_date: date, attendance_type: AttendanceType | None = None
-    ) -> list[dict[str, Any]]:
+    ) -> list[AttendanceTrend]:
         """Get attendance trends over time."""
         logger.debug("Getting attendance trends from %s to %s", start_date, end_date)
         collection = await self.get_collection()
@@ -353,15 +364,19 @@ class AttendanceRepository(BaseRepository):
 
         trends = []
         for result in results:
-            trend = {
-                "date": result["_id"]["date"],
-                "service_type": result["_id"]["type"],
-                "total_members": result["total"],
-                "present_count": result["present"],
-                "absent_count": result["absent"],
-                "late_count": result["late"],
-                "attendance_rate": (result["present"] / result["total"]) * 100 if result["total"] > 0 else 0
-            }
+            attendance_rate = (result["present"] / result["total"]) * 100 if result["total"] > 0 else 0
+
+            trend = AttendanceTrend(
+                date=result["_id"]["date"],
+                service_type=result["_id"]["type"],
+                total_members=result["total"],
+                present_count=result["present"],
+                absent_count=result["absent"],
+                late_count=result["late"],
+                attendance_rate=round(attendance_rate, 2),
+                created_at=datetime.now(),
+                updated_at=datetime.now()
+            )
             trends.append(trend)
 
         return trends

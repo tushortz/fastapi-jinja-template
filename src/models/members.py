@@ -1,9 +1,9 @@
 """Church member models."""
 
-from datetime import date
+from datetime import date, datetime
 from enum import Enum
 
-from pydantic import EmailStr, Field, field_validator
+from pydantic import EmailStr, Field, field_serializer, field_validator
 
 from .base import TimestampModel
 
@@ -83,9 +83,6 @@ class MemberBase(TimestampModel):
     state: str | None = Field(None, max_length=100)
     zip_code: str | None = Field(None, max_length=20)
     country: str | None = Field(None, max_length=100)
-    emergency_contact_name: str | None = Field(None, max_length=100)
-    emergency_contact_phone: str | None = Field(None, max_length=20)
-    emergency_contact_relationship: str | None = Field(None, max_length=50)
     occupation: str | None = Field(None, max_length=100)
     employer: str | None = Field(None, max_length=100)
     education_level: str | None = Field(None, max_length=100)
@@ -97,9 +94,11 @@ class MemberBase(TimestampModel):
     notes: list[MemberNote] = Field(default_factory=list, max_length=1000)
     is_active: bool = True
     first_attended: date | None = None
+    last_prayed_for: datetime | None = None
+    last_visited: datetime | None = None
 
 
-    @field_validator("phone", "emergency_contact_phone")
+    @field_validator("phone")
     @classmethod
     def validate_phone(cls, v: str | None) -> str | None:
         """Validate phone number format."""
@@ -158,9 +157,6 @@ class MemberUpdate(TimestampModel):
     state: str | None = Field(None, max_length=100)
     zip_code: str | None = Field(None, max_length=20)
     country: str | None = Field(None, max_length=100)
-    emergency_contact_name: str | None = Field(None, max_length=100)
-    emergency_contact_phone: str | None = Field(None, max_length=20)
-    emergency_contact_relationship: str | None = Field(None, max_length=50)
     occupation: str | None = Field(None, max_length=100)
     employer: str | None = Field(None, max_length=100)
     education_level: str | None = Field(None, max_length=100)
@@ -171,8 +167,10 @@ class MemberUpdate(TimestampModel):
     notes: list[MemberNote] | None = None
     is_active: bool | None = None
     first_attended: date | None = None
+    last_prayed_for: datetime | None = None
+    last_visited: datetime | None = None
 
-    @field_validator("phone", "emergency_contact_phone")
+    @field_validator("phone")
     @classmethod
     def validate_phone(cls, v: str | None) -> str | None:
         """Validate phone number format."""
@@ -205,6 +203,11 @@ class Member(MemberBase):
     """Member model for API responses."""
 
     id: str
+
+    @field_serializer("last_prayed_for", "last_visited")
+    def serialize_datetime_fields(self, value: datetime | None) -> str | None:
+        """Serialize datetime fields to ISO format."""
+        return value.isoformat() if value else None
 
     @property
     def full_name(self) -> str:
@@ -241,3 +244,19 @@ class Member(MemberBase):
             return False
         today = date.today()
         return self.date_of_birth.month == today.month
+
+
+class MemberStatistics(TimestampModel):
+    """Member statistics model."""
+
+    total_members: int = 0
+    active_members: int = 0
+    inactive_members: int = 0
+    status_counts: dict[str, int] = Field(default_factory=dict)
+    role_counts: dict[str, int] = Field(default_factory=dict)
+    gender_counts: dict[str, int] = Field(default_factory=dict)
+    marital_status_counts: dict[str, int] = Field(default_factory=dict)
+    ministry_counts: dict[str, int] = Field(default_factory=dict)
+    recent_registrations: int = 0  # Last 30 days
+    birthday_this_month: int = 0
+    birthday_today: int = 0

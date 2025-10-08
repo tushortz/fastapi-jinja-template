@@ -8,8 +8,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from src.auth import get_current_user
 from src.models.attendance import (
-    Attendance, AttendanceCreate, AttendanceStatus, AttendanceSummary, AttendanceType,
-    AttendanceUpdate, ServiceAttendance,
+    Attendance, AttendanceCreate, AttendanceStatistics, AttendanceStatus,
+    AttendanceSummary, AttendanceType, AttendanceUpdate, BulkAttendanceResult,
+    ServiceAttendance,
 )
 from src.models.users import User
 from src.services.attendance import AttendanceService
@@ -28,6 +29,37 @@ async def get_attendance_statuses() -> list[str]:
     """Return list of attendance statuses (enum values)."""
     return [s.value for s in AttendanceStatus]
 
+
+
+@router.post("/bulk", status_code=status.HTTP_201_CREATED, name="api_create_bulk_attendance")
+async def create_bulk_attendance(
+    bulk_data: dict[str, Any],
+    current_user: User = Depends(get_current_user),
+) -> BulkAttendanceResult:
+    """Create multiple attendance records at once."""
+    logger.info(
+        "Creating bulk attendance records for %d members on %s",
+        len(bulk_data.get("members", [])),
+        bulk_data.get("attendance_date"),
+    )
+
+    try:
+        attendance_service = AttendanceService()
+        result = await attendance_service.create_bulk_attendance(bulk_data)
+        logger.info("Bulk attendance records created successfully: %d records", result["created_count"])
+        return result
+    except ValueError as e:
+        logger.warning("Failed to create bulk attendance records: %s", str(e))
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        logger.error("Error creating bulk attendance records: %s", str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error"
+        )
 
 
 @router.post("/", response_model=Attendance, status_code=status.HTTP_201_CREATED, name="api_create_attendance")
@@ -225,7 +257,7 @@ async def get_attendance_statistics(
     start_date: date | None = Query(None, description="Start date for statistics"),
     end_date: date | None = Query(None, description="End date for statistics"),
     current_user: User = Depends(get_current_user),
-) -> dict[str, Any]:
+) -> AttendanceStatistics:
     """Get attendance statistics."""
     logger.debug("Getting attendance statistics")
 

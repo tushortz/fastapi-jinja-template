@@ -25,8 +25,5 @@ class TimestampModel(BaseModel):
 
     model_config = ConfigDict(
         from_attributes=True,
-        use_enum_values=True,
-        json_encoders={
-            datetime: lambda v: v.isoformat()
-        }
+        use_enum_values=True
     )

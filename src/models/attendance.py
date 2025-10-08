@@ -130,3 +130,66 @@ class ServiceAttendance(TimestampModel):
         if self.total_members == 0:
             return 0.0
         return (self.present_members / self.total_members) * 100
+
+
+class MemberAttendanceSummaryRepo(TimestampModel):
+    """Member attendance summary model for repository operations."""
+
+    member_id: str
+    total_services: int = 0
+    present_count: int = 0
+    absent_count: int = 0
+    late_count: int = 0
+    excused_count: int = 0
+    attendance_rate: float = 0.0
+    start_date: date
+    end_date: date
+
+
+class ServiceAttendanceSummaryRepo(TimestampModel):
+    """Service attendance summary model for repository operations."""
+
+    service_date: date
+    service_type: AttendanceType
+    total_members: int = 0
+    present_members: int = 0
+    absent_members: int = 0
+    late_members: int = 0
+    excused_members: int = 0
+    attendance_rate: float = 0.0
+
+
+class AttendanceTrend(TimestampModel):
+    """Attendance trend model for reporting."""
+
+    date: str  # ISO date string
+    service_type: AttendanceType
+    total_members: int = 0
+    present_count: int = 0
+    absent_count: int = 0
+    late_count: int = 0
+    attendance_rate: float = 0.0
+
+
+class AttendanceStatistics(TimestampModel):
+    """Attendance statistics model."""
+
+    total_records: int = 0
+    present_count: int = 0
+    absent_count: int = 0
+    late_count: int = 0
+    excused_count: int = 0
+    attendance_rate: float = 0.0
+    period_start: date | None = None
+    period_end: date | None = None
+
+
+class BulkAttendanceResult(TimestampModel):
+    """Bulk attendance creation result model."""
+
+    created_count: int = 0
+    failed_count: int = 0
+    total_processed: int = 0
+    errors: list[str] = Field(default_factory=list)
+    success: bool = True
+    message: str = "Bulk attendance records processed successfully"

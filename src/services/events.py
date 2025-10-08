@@ -3,7 +3,9 @@
 import logging
 from typing import Any
 
-from src.models.events import CalendarEvent, CalendarEventCreate, CalendarEventUpdate
+from src.models.events import (
+    CalendarEvent, CalendarEventCreate, CalendarEventUpdate, EventStatistics,
+)
 from src.repositories.events import CalendarEventRepository
 
 logger = logging.getLogger(__name__)
@@ -259,7 +261,7 @@ class CalendarEventService:
             for event in events_in_db
         ]
 
-    async def get_event_statistics(self) -> dict[str, Any]:
+    async def get_event_statistics(self) -> EventStatistics:
         """Get event statistics."""
         logger.info("Getting event statistics")
         try:

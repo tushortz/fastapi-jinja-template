@@ -127,4 +127,18 @@ class CalendarEvent(CalendarEventBase):
     id: str
 
 
+class EventStatistics(TimestampModel):
+    """Event statistics model."""
+
+    total_events: int = 0
+    upcoming_events: int = 0
+    past_events: int = 0
+    events_this_month: int = 0
+    events_next_month: int = 0
+    all_day_events: int = 0
+    timed_events: int = 0
+    public_events: int = 0
+    private_events: int = 0
+
+
 # Calendar models removed per requirements

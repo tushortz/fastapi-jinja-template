@@ -5,8 +5,10 @@ from datetime import date, datetime
 from typing import Any
 
 from src.models.attendance import (
-    Attendance, AttendanceCreate, AttendanceInDB, AttendanceStatus, AttendanceSummary,
-    AttendanceType, AttendanceUpdate, ServiceAttendance,
+    Attendance, AttendanceCreate, AttendanceInDB, AttendanceStatistics,
+    AttendanceStatus, AttendanceSummary, AttendanceTrend, AttendanceType,
+    AttendanceUpdate, BulkAttendanceResult, MemberAttendanceSummaryRepo,
+    ServiceAttendance, ServiceAttendanceSummaryRepo,
 )
 from src.repositories.attendance import AttendanceRepository
 
@@ -55,11 +57,93 @@ class AttendanceService:
             attendance_date=attendance_in_db.attendance_date,
             attendance_type=attendance_in_db.attendance_type,
             status=attendance_in_db.status,
-            service_time=attendance_in_db.service_time,
             notes=attendance_in_db.notes,
             recorded_by=attendance_in_db.recorded_by,
             created_at=attendance_in_db.created_at,
             updated_at=attendance_in_db.updated_at,
+        )
+
+    async def create_bulk_attendance(self, bulk_data: dict[str, Any]) -> BulkAttendanceResult:
+        """Create multiple attendance records at once."""
+        logger.info(
+            "Creating bulk attendance records for %d members on %s",
+            len(bulk_data.get("members", [])),
+            bulk_data.get("attendance_date"),
+        )
+
+        attendance_date = bulk_data.get("attendance_date")
+        attendance_type = bulk_data.get("attendance_type")
+        recorded_by = bulk_data.get("recorded_by")
+        notes = bulk_data.get("notes", "")
+        members = bulk_data.get("members", [])
+
+        if not attendance_date or not attendance_type or not recorded_by:
+            raise ValueError("Missing required fields: attendance_date, attendance_type, or recorded_by")
+
+        if not members:
+            raise ValueError("No members provided for bulk attendance")
+
+        created_count = 0
+        failed_count = 0
+        errors = []
+
+        for member_data in members:
+            try:
+                member_id = member_data.get("member_id")
+                status = member_data.get("status")
+
+                if not member_id or not status:
+                    errors.append(f"Missing member_id or status for member: {member_data}")
+                    failed_count += 1
+                    continue
+
+                # Check if attendance record already exists
+                if await self.attendance_repo.check_attendance_exists(
+                    member_id, attendance_date, attendance_type
+                ):
+                    logger.warning(
+                        "Attendance record already exists for member %s on %s for %s",
+                        member_id, attendance_date, attendance_type
+                    )
+                    errors.append(f"Attendance already exists for member {member_id}")
+                    failed_count += 1
+                    continue
+
+                # Create attendance record
+                attendance_create = AttendanceCreate(
+                    member_id=member_id,
+                    attendance_date=attendance_date,
+                    attendance_type=attendance_type,
+                    status=status,
+                    notes=notes,
+                    recorded_by=recorded_by
+                )
+
+                await self.attendance_repo.create(attendance_create)
+                created_count += 1
+
+            except Exception as e:
+                logger.error("Error creating attendance for member %s: %s", member_data.get("member_id"), str(e))
+                errors.append(f"Error for member {member_data.get('member_id')}: {str(e)}")
+                failed_count += 1
+
+        logger.info(
+            "Bulk attendance creation completed: %d created, %d failed",
+            created_count, failed_count
+        )
+
+        success = failed_count == 0
+        message = f"Successfully created {created_count} attendance records" if success else f"Created {created_count} records, {failed_count} failed"
+
+        return BulkAttendanceResult(
+            created_count=created_count,
+            failed_count=failed_count,
+            total_processed=len(members),
+            errors=errors,
+            success=success,
+            message=message,
+            created_at=datetime.now(),
+            updated_at=datetime.now()
         )
 
     async def get_attendance_by_id(self, attendance_id: str) -> Attendance | None:
@@ -75,7 +159,6 @@ class AttendanceService:
             attendance_date=attendance_in_db.attendance_date,
             attendance_type=attendance_in_db.attendance_type,
             status=attendance_in_db.status,
-            service_time=attendance_in_db.service_time,
             notes=attendance_in_db.notes,
             recorded_by=attendance_in_db.recorded_by,
             created_at=attendance_in_db.created_at,
@@ -100,7 +183,6 @@ class AttendanceService:
             attendance_date=attendance_in_db.attendance_date,
             attendance_type=attendance_in_db.attendance_type,
             status=attendance_in_db.status,
-            service_time=attendance_in_db.service_time,
             notes=attendance_in_db.notes,
             recorded_by=attendance_in_db.recorded_by,
             created_at=attendance_in_db.created_at,
@@ -137,7 +219,6 @@ class AttendanceService:
                 attendance_date=record.attendance_date,
                 attendance_type=record.attendance_type,
                 status=record.status,
-                service_time=record.service_time,
                 notes=record.notes,
                 recorded_by=record.recorded_by,
                 created_at=record.created_at,
@@ -162,7 +243,6 @@ class AttendanceService:
                 attendance_date=record.attendance_date,
                 attendance_type=record.attendance_type,
                 status=record.status,
-                service_time=record.service_time,
                 notes=record.notes,
                 recorded_by=record.recorded_by,
                 created_at=record.created_at,
@@ -193,7 +273,6 @@ class AttendanceService:
                 attendance_date=record.attendance_date,
                 attendance_type=record.attendance_type,
                 status=record.status,
-                service_time=record.service_time,
                 notes=record.notes,
                 recorded_by=record.recorded_by,
                 created_at=record.created_at,
@@ -215,20 +294,20 @@ class AttendanceService:
             member_id, start_date, end_date
         )
 
-        # Create AttendanceSummary object
+        # Convert repository model to service model
         summary = AttendanceSummary(
-            member_id=summary_data["member_id"],
+            member_id=summary_data.member_id,
             member_name="",  # Will be populated by the calling service
-            total_services=summary_data["total_services"],
-            present_count=summary_data["present_count"],
-            absent_count=summary_data["absent_count"],
-            late_count=summary_data["late_count"],
-            excused_count=summary_data["excused_count"],
-            attendance_rate=summary_data["attendance_rate"],
-            period_start=summary_data["start_date"],
-            period_end=summary_data["end_date"],
-            created_at=datetime.now(),
-            updated_at=datetime.now(),
+            total_services=summary_data.total_services,
+            present_count=summary_data.present_count,
+            absent_count=summary_data.absent_count,
+            late_count=summary_data.late_count,
+            excused_count=summary_data.excused_count,
+            attendance_rate=summary_data.attendance_rate,
+            period_start=summary_data.start_date,
+            period_end=summary_data.end_date,
+            created_at=summary_data.created_at,
+            updated_at=summary_data.updated_at,
         )
 
         return summary
@@ -248,18 +327,18 @@ class AttendanceService:
 
         # Create ServiceAttendance object
         service_attendance = ServiceAttendance(
-            service_date=summary_data["service_date"],
-            service_type=summary_data["service_type"],
-            total_members=summary_data["total_members"],
-            present_members=summary_data["present_members"],
-            absent_members=summary_data["absent_members"],
-            late_members=summary_data["late_members"],
-            excused_members=summary_data["excused_members"],
-            attendance_rate=summary_data["attendance_rate"],
+            service_date=summary_data.service_date,
+            service_type=summary_data.service_type,
+            total_members=summary_data.total_members,
+            present_members=summary_data.present_members,
+            absent_members=summary_data.absent_members,
+            late_members=summary_data.late_members,
+            excused_members=summary_data.excused_members,
+            attendance_rate=summary_data.attendance_rate,
             recorded_by="",  # Will be populated by the calling service
             notes=None,
-            created_at=datetime.now(),
-            updated_at=datetime.now(),
+            created_at=summary_data.created_at,
+            updated_at=summary_data.updated_at,
         )
 
         return service_attendance
@@ -295,7 +374,6 @@ class AttendanceService:
                 attendance_date=record.attendance_date,
                 attendance_type=record.attendance_type,
                 status=record.status,
-                service_time=record.service_time,
                 notes=record.notes,
                 recorded_by=record.recorded_by,
                 created_at=record.created_at,
@@ -316,7 +394,6 @@ class AttendanceService:
                 attendance_date=record.attendance_date,
                 attendance_type=record.attendance_type,
                 status=record.status,
-                service_time=record.service_time,
                 notes=record.notes,
                 recorded_by=record.recorded_by,
                 created_at=record.created_at,
@@ -355,7 +432,7 @@ class AttendanceService:
 
     async def get_attendance_statistics(
         self, start_date: date | None = None, end_date: date | None = None
-    ) -> dict[str, Any]:
+    ) -> AttendanceStatistics:
         """Get attendance statistics."""
         logger.info("Getting attendance statistics")
         try:
@@ -376,16 +453,18 @@ class AttendanceService:
             total_records = present_count + absent_count + late_count + excused_count
             attendance_rate = (present_count / total_records * 100) if total_records > 0 else 0
 
-            return {
-                "total_records": total_records,
-                "present_count": present_count,
-                "absent_count": absent_count,
-                "late_count": late_count,
-                "excused_count": excused_count,
-                "attendance_rate": round(attendance_rate, 2),
-                "period_start": start_date,
-                "period_end": end_date,
-            }
+            return AttendanceStatistics(
+                total_records=total_records,
+                present_count=present_count,
+                absent_count=absent_count,
+                late_count=late_count,
+                excused_count=excused_count,
+                attendance_rate=round(attendance_rate, 2),
+                period_start=start_date,
+                period_end=end_date,
+                created_at=datetime.now(),
+                updated_at=datetime.now()
+            )
         except Exception as e:
             logger.error("Error getting attendance statistics: %s", str(e))
             raise

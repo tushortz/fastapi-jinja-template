@@ -36,6 +36,12 @@
               <button @click="openAddNote()" class="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700">
                 <i class="fas fa-plus mr-2"></i>Add Note
               </button>
+              <button @click="openPrayModal()" class="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">
+                <i class="fas fa-pray mr-2"></i>Pray
+              </button>
+              <button @click="openVisitModal()" class="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-orange-600 rounded-md hover:bg-orange-700">
+                <i class="fas fa-home mr-2"></i>Visit
+              </button>
               <button @click="openInsights()" class="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-purple-600 rounded-md hover:bg-purple-700">
                 <i class="fas fa-magic mr-2"></i>AI Insight
               </button>
@@ -65,6 +71,8 @@
                 <div class="flex items-center" x-show="member.baptism_date"><i class="fas fa-tint mr-2 text-gray-400"></i><span x-text="formatDate(member.baptism_date)"></span></div>
                 <div class="flex items-center" x-show="member.ministry"><i class="fas fa-people-group mr-2 text-gray-400"></i><span x-text="member.ministry ? member.ministry.replace('_',' ').replace(/\b\w/g, l => l.toUpperCase()) : ''"></span></div>
                 <div class="flex items-center" x-show="member.first_attended"><i class="fas fa-calendar-check mr-2 text-gray-400"></i><span x-text="formatDate(member.first_attended)"></span></div>
+                <div class="flex items-center"><i class="fas fa-pray mr-2 text-gray-400"></i><span class="font-bold" x-text="member.last_prayed_for ? formatDate(member.last_prayed_for) + ' at ' + formatTime(member.last_prayed_for) : 'Never'"></span></div>
+                <div class="flex items-center"><i class="fas fa-home mr-2 text-gray-400"></i><span class="font-bold" x-text="member.last_visited ? formatDate(member.last_visited) + ' at ' + formatTime(member.last_visited) : 'Never'"></span></div>
               </div>
             </div>
           </div>
@@ -86,16 +94,6 @@
                 <div class="flex items-center" x-show="member.employer"><i class="fas fa-building mr-2 text-gray-400"></i><span x-text="member.employer"></span></div>
                 <div class="flex items-center" x-show="member.education_level"><i class="fas fa-graduation-cap mr-2 text-gray-400"></i><span x-text="member.education_level"></span></div>
               </div>
-            </div>
-          </div>
-
-          <!-- Emergency Contact -->
-          <div x-show="member.emergency_contact_name || member.emergency_contact_phone || member.emergency_contact_relationship">
-            <h3 class="text-sm font-medium text-gray-500 uppercase tracking-wide">Emergency Contact</h3>
-            <div class="mt-2 space-y-2 text-sm text-gray-700">
-              <div class="flex items-center" x-show="member.emergency_contact_name"><i class="fas fa-user-shield mr-2 text-gray-400"></i><span x-text="member.emergency_contact_name"></span></div>
-              <div class="flex items-center" x-show="member.emergency_contact_phone"><i class="fas fa-phone mr-2 text-gray-400"></i><span x-text="member.emergency_contact_phone"></span></div>
-              <div class="flex items-center" x-show="member.emergency_contact_relationship"><i class="fas fa-hand-holding-heart mr-2 text-gray-400"></i><span x-text="member.emergency_contact_relationship"></span></div>
             </div>
           </div>
 
@@ -255,6 +253,121 @@
         </div>
       </div>
 
+      <!-- Pray Modal -->
+      <div x-show="showPrayModal" class="fixed inset-0 z-50 flex items-center justify-center" style="display:none">
+        <div class="absolute inset-0 bg-black/50" @click="closePrayModal()"></div>
+        <div class="relative bg-white rounded-xl shadow-2xl border border-gray-200 w-11/12 sm:w-10/12 md:w-3/4 lg:w-2/3 max-w-2xl mx-4 sm:mx-6">
+          <!-- Header -->
+          <div class="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4 flex items-center justify-between">
+            <h3 class="text-lg font-semibold text-white">Pray for Member</h3>
+            <button @click="closePrayModal()" class="text-white/90 hover:text-white"><i class="fas fa-times"></i></button>
+          </div>
+          <!-- Body -->
+          <div class="p-6">
+            <form @submit.prevent="submitPrayer()">
+              <div class="mb-4">
+                <label for="prayerDate" class="block text-sm font-medium text-gray-700 mb-2">Last Prayed For</label>
+                <input
+                  type="datetime-local"
+                  id="prayerDate"
+                  x-model="prayerDate"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  required>
+              </div>
+              <div class="flex justify-end space-x-3">
+                <button type="button" @click="closePrayModal()"
+                        class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                  Cancel
+                </button>
+                <button type="submit"
+                        :disabled="!prayerDate || prayerSubmitting"
+                        class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                  <i class="fas fa-spinner fa-spin mr-2" x-show="prayerSubmitting"></i>
+                  <span x-text="prayerSubmitting ? 'Updating...' : 'Update Prayer'"></span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- Visit Modal -->
+      <div x-show="showVisitModal" class="fixed inset-0 z-50 flex items-center justify-center" style="display:none">
+        <div class="absolute inset-0 bg-black/50" @click="closeVisitModal()"></div>
+        <div class="relative bg-white rounded-xl shadow-2xl border border-gray-200 w-11/12 sm:w-10/12 md:w-3/4 lg:w-2/3 max-w-2xl mx-4 sm:mx-6">
+          <!-- Header -->
+          <div class="bg-gradient-to-r from-orange-600 to-red-600 px-6 py-4 flex items-center justify-between">
+            <h3 class="text-lg font-semibold text-white">Visit Member</h3>
+            <button @click="closeVisitModal()" class="text-white/90 hover:text-white"><i class="fas fa-times"></i></button>
+          </div>
+          <!-- Body -->
+          <div class="p-6">
+            <form @submit.prevent="submitVisit()">
+              <div class="mb-4">
+                <label for="visitDate" class="block text-sm font-medium text-gray-700 mb-2">Last Visited</label>
+                <input
+                  type="datetime-local"
+                  id="visitDate"
+                  x-model="visitDate"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                  required>
+              </div>
+              <div class="flex justify-end space-x-3">
+                <button type="button" @click="closeVisitModal()"
+                        class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                  Cancel
+                </button>
+                <button type="submit"
+                        :disabled="!visitDate || visitSubmitting"
+                        class="px-4 py-2 text-sm font-medium text-white bg-orange-600 rounded-md hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                  <i class="fas fa-spinner fa-spin mr-2" x-show="visitSubmitting"></i>
+                  <span x-text="visitSubmitting ? 'Updating...' : 'Update Visit'"></span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- Delete Note Confirmation Modal -->
+      <div x-show="showDeleteConfirm" class="fixed inset-0 z-50 flex items-center justify-center" style="display:none">
+        <div class="absolute inset-0 bg-black/50" @click="closeDeleteConfirm()"></div>
+        <div class="relative bg-white rounded-xl shadow-2xl border border-gray-200 w-11/12 sm:w-10/12 md:w-3/4 lg:w-2/3 max-w-md mx-4 sm:mx-6">
+          <!-- Header -->
+          <div class="bg-gradient-to-r from-red-600 to-pink-600 px-6 py-4 flex items-center justify-between">
+            <h3 class="text-lg font-semibold text-white">Confirm Deletion</h3>
+            <button @click="closeDeleteConfirm()" class="text-white/90 hover:text-white"><i class="fas fa-times"></i></button>
+          </div>
+          <!-- Body -->
+          <div class="p-6">
+            <div class="flex items-center mb-4">
+              <div class="flex-shrink-0">
+                <i class="fas fa-exclamation-triangle text-red-500 text-2xl"></i>
+              </div>
+              <div class="ml-3">
+                <h4 class="text-lg font-medium text-gray-900">Delete Note</h4>
+                <p class="text-sm text-gray-500 mt-1">Are you sure you want to delete this note? This action cannot be undone.</p>
+              </div>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-3 mb-4">
+              <p class="text-sm text-gray-700" x-text="noteToDelete?.note || noteToDelete"></p>
+            </div>
+            <div class="flex justify-end space-x-3">
+              <button @click="closeDeleteConfirm()"
+                      class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                Cancel
+              </button>
+              <button @click="confirmDeleteNote()"
+                      :disabled="deleteSubmitting"
+                      class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                <i class="fas fa-spinner fa-spin mr-2" x-show="deleteSubmitting"></i>
+                <span x-text="deleteSubmitting ? 'Deleting...' : 'Delete Note'"></span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div x-show="!loading && !member" class="text-center py-8">
         <i class="fas fa-exclamation-circle text-gray-400 text-2xl"></i>
         <p class="text-sm text-gray-500 mt-2">Member not found.</p>
@@ -277,6 +390,16 @@
       newNote: '',
       noteSubmitting: false,
       notesPage: 0,
+      showPrayModal: false,
+      prayerDate: '',
+      prayerSubmitting: false,
+      showVisitModal: false,
+      visitDate: '',
+      visitSubmitting: false,
+      showDeleteConfirm: false,
+      noteToDelete: null,
+      noteToDeleteIndex: null,
+      deleteSubmitting: false,
       async init() {
         try {
           const res = await apiCall(`/api/members/${memberId}`);
@@ -386,18 +509,31 @@
       async deleteNote(note, index) {
         if (!this.member || !note) return;
 
-        // Show confirmation dialog
-        const confirmed = confirm('Are you sure you want to delete this note? This action cannot be undone.');
-        if (!confirmed) return;
+        // Store note and index for deletion
+        this.noteToDelete = note;
+        this.noteToDeleteIndex = index;
 
+        // Show confirmation modal
+        this.showDeleteConfirm = true;
+      },
+      closeDeleteConfirm() {
+        this.showDeleteConfirm = false;
+        this.noteToDelete = null;
+        this.noteToDeleteIndex = null;
+        this.deleteSubmitting = false;
+      },
+      async confirmDeleteNote() {
+        if (!this.noteToDelete || this.noteToDeleteIndex === null) return;
+
+        this.deleteSubmitting = true;
         try {
-          const res = await apiCall(`/api/members/${this.member.id}/notes/${note.id || index}`, {
+          const res = await apiCall(`/api/members/${this.member.id}/notes/${this.noteToDelete.id || this.noteToDeleteIndex}`, {
             method: 'DELETE'
           });
 
           if (res.ok) {
             // Remove note from local array immediately for better UX
-            this.member.notes.splice(index, 1);
+            this.member.notes.splice(this.noteToDeleteIndex, 1);
             Alpine.store('toastStore')?.add('Note deleted successfully!', 'success');
 
             // Adjust pagination if needed
@@ -405,6 +541,9 @@
             if (this.notesPage >= totalPages && totalPages > 0) {
               this.notesPage = totalPages - 1;
             }
+
+            // Close modal
+            this.closeDeleteConfirm();
           } else {
             const error = await res.json();
             Alpine.store('toastStore')?.add('Error deleting note: ' + (error.detail || 'Unknown error'), 'error');
@@ -412,6 +551,92 @@
         } catch (error) {
           console.error('Error deleting note:', error);
           Alpine.store('toastStore')?.add('Error deleting note. Please try again.', 'error');
+        } finally {
+          this.deleteSubmitting = false;
+        }
+      },
+      openVisitModal() {
+        this.showVisitModal = true;
+        // Set default to current datetime
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        this.visitDate = `${year}-${month}-${day}T${hours}:${minutes}`;
+      },
+      closeVisitModal() {
+        this.showVisitModal = false;
+        this.visitDate = '';
+        this.visitSubmitting = false;
+      },
+      async submitVisit() {
+        if (!this.visitDate || !this.member) return;
+
+        this.visitSubmitting = true;
+        try {
+          const res = await apiCall(`/api/members/${this.member.id}/visit`, {
+            method: 'PUT',
+            body: JSON.stringify({ last_visited: this.visitDate })
+          });
+
+          if (res.ok) {
+            // Update member data locally
+            this.member.last_visited = this.visitDate;
+            Alpine.store('toastStore')?.add('Visit date updated successfully!', 'success');
+            this.closeVisitModal();
+          } else {
+            const error = await res.json();
+            Alpine.store('toastStore')?.add('Error updating visit date: ' + (error.detail || 'Unknown error'), 'error');
+          }
+        } catch (error) {
+          console.error('Error updating visit date:', error);
+          Alpine.store('toastStore')?.add('Error updating visit date. Please try again.', 'error');
+        } finally {
+          this.visitSubmitting = false;
+        }
+      },
+      openPrayModal() {
+        this.showPrayModal = true;
+        // Set default to current datetime
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        this.prayerDate = `${year}-${month}-${day}T${hours}:${minutes}`;
+      },
+      closePrayModal() {
+        this.showPrayModal = false;
+        this.prayerDate = '';
+        this.prayerSubmitting = false;
+      },
+      async submitPrayer() {
+        if (!this.prayerDate || !this.member) return;
+
+        this.prayerSubmitting = true;
+        try {
+          const res = await apiCall(`/api/members/${this.member.id}/prayer`, {
+            method: 'PUT',
+            body: JSON.stringify({ last_prayed_for: this.prayerDate })
+          });
+
+          if (res.ok) {
+            // Update member data locally
+            this.member.last_prayed_for = this.prayerDate;
+            Alpine.store('toastStore')?.add('Prayer date updated successfully!', 'success');
+            this.closePrayModal();
+          } else {
+            const error = await res.json();
+            Alpine.store('toastStore')?.add('Error updating prayer date: ' + (error.detail || 'Unknown error'), 'error');
+          }
+        } catch (error) {
+          console.error('Error updating prayer date:', error);
+          Alpine.store('toastStore')?.add('Error updating prayer date. Please try again.', 'error');
+        } finally {
+          this.prayerSubmitting = false;
         }
       },
       formatTime(dateString) {
