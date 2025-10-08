@@ -10,6 +10,7 @@ from src.models.activities import (
 )
 from src.repositories.activities import ActivityRepository
 from src.services.activities import ActivityService
+from src.utils.date import get_current_date
 
 
 class TestActivityModel:
@@ -45,8 +46,8 @@ class TestActivityModel:
                 start_date=start_date,
                 end_date=end_date,
                 organizer_id="507f1f77bcf86cd799439011",
-                created_at=datetime.now(),
-                updated_at=datetime.now()
+                created_at=get_current_date(),
+                updated_at=get_current_date()
             )
 
     def test_activity_end_time_validation(self):
@@ -61,8 +62,8 @@ class TestActivityModel:
                 start_time=start_time,
                 end_time=end_time,
                 organizer_id="507f1f77bcf86cd799439011",
-                created_at=datetime.now(),
-                updated_at=datetime.now()
+                created_at=get_current_date(),
+                updated_at=get_current_date()
             )
 
     def test_activity_is_today(self):
@@ -73,8 +74,8 @@ class TestActivityModel:
             title="Test Activity",
             start_date=today,
             organizer_id="507f1f77bcf86cd799439011",
-            created_at=datetime.now(),
-            updated_at=datetime.now()
+            created_at=get_current_date(),
+            updated_at=get_current_date()
         )
         assert activity.is_today is True
 
@@ -86,8 +87,8 @@ class TestActivityModel:
             title="Test Activity",
             start_date=past_date,
             organizer_id="507f1f77bcf86cd799439011",
-            created_at=datetime.now(),
-            updated_at=datetime.now()
+            created_at=get_current_date(),
+            updated_at=get_current_date()
         )
         assert activity.is_past is True
 
@@ -99,8 +100,8 @@ class TestActivityModel:
             title="Test Activity",
             start_date=future_date,
             organizer_id="507f1f77bcf86cd799439011",
-            created_at=datetime.now(),
-            updated_at=datetime.now()
+            created_at=get_current_date(),
+            updated_at=get_current_date()
         )
         assert activity.is_upcoming is True
 
@@ -113,8 +114,8 @@ class TestActivityModel:
             start_time=time(9, 0),
             end_time=time(11, 0),
             organizer_id="507f1f77bcf86cd799439011",
-            created_at=datetime.now(),
-            updated_at=datetime.now()
+            created_at=get_current_date(),
+            updated_at=get_current_date()
         )
         assert activity.duration_hours == 2.0
 
@@ -125,8 +126,8 @@ class TestActivityModel:
             title="Test Activity",
             start_date=date.today(),
             organizer_id="507f1f77bcf86cd799439011",
-            created_at=datetime.now(),
-            updated_at=datetime.now()
+            created_at=get_current_date(),
+            updated_at=get_current_date()
         )
         assert activity.duration_hours is None
 
@@ -157,8 +158,8 @@ class TestActivityRepository:
                 "activity_type": ActivityType.WORSHIP_SERVICE,
                 "start_date": date.today().isoformat(),
                 "organizer_id": "507f1f77bcf86cd799439012",
-                "created_at": datetime.now(),
-                "updated_at": datetime.now()
+                "created_at": get_current_date(),
+                "updated_at": get_current_date()
             }
         ]
         mock_collection.find.return_value.sort.return_value.to_list.return_value = mock_docs
@@ -180,8 +181,8 @@ class TestActivityRepository:
                 "start_date": today.isoformat(),
                 "start_time": "09:00:00",
                 "organizer_id": "507f1f77bcf86cd799439012",
-                "created_at": datetime.now(),
-                "updated_at": datetime.now()
+                "created_at": get_current_date(),
+                "updated_at": get_current_date()
             }
         ]
         mock_collection.find.return_value.sort.return_value.to_list.return_value = mock_docs
@@ -237,8 +238,8 @@ class TestActivityService:
             activity_type=ActivityType.WORSHIP_SERVICE,
             start_date=date.today(),
             organizer_id="507f1f77bcf86cd799439011",
-            created_at=datetime.now(),
-            updated_at=datetime.now()
+            created_at=get_current_date(),
+            updated_at=get_current_date()
         )
         mock_activity_repo.create.return_value = mock_activity_in_db
 
@@ -247,8 +248,8 @@ class TestActivityService:
             activity_type=ActivityType.WORSHIP_SERVICE,
             start_date=date.today(),
             organizer_id="507f1f77bcf86cd799439011",
-            created_at=datetime.now(),
-            updated_at=datetime.now()
+            created_at=get_current_date(),
+            updated_at=get_current_date()
         )
 
         result = await activity_service.create_activity(activity_create)
@@ -266,8 +267,8 @@ class TestActivityService:
             activity_type=ActivityType.WORSHIP_SERVICE,
             start_date=date.today(),
             organizer_id="507f1f77bcf86cd799439011",
-            created_at=datetime.now(),
-            updated_at=datetime.now()
+            created_at=get_current_date(),
+            updated_at=get_current_date()
         )
         mock_activity_repo.get_by_id.return_value = mock_activity_in_db
 
@@ -298,8 +299,8 @@ class TestActivityService:
                 activity_type=ActivityType.WORSHIP_SERVICE,
                 start_date=date.today().replace(day=date.today().day + 1),
                 organizer_id="507f1f77bcf86cd799439011",
-                created_at=datetime.now(),
-                updated_at=datetime.now()
+                created_at=get_current_date(),
+                updated_at=get_current_date()
             )
         ]
         mock_activity_repo.get_upcoming_activities.return_value = mock_activities
@@ -320,8 +321,8 @@ class TestActivityService:
                 activity_type=ActivityType.WORSHIP_SERVICE,
                 start_date=date.today(),
                 organizer_id="507f1f77bcf86cd799439011",
-                created_at=datetime.now(),
-                updated_at=datetime.now()
+                created_at=get_current_date(),
+                updated_at=get_current_date()
             )
         ]
         mock_activity_repo.get_today_activities.return_value = mock_activities

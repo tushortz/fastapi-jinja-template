@@ -30,6 +30,36 @@ async def get_all_users(
     return users
 
 
+@router.get("/users/{user_id}", response_model=User, name="api_admin_get_user")
+async def get_user_by_id(
+    user_id: str,
+    current_user: User = Depends(get_current_admin_user),
+    user_service: UserService = Depends(),
+):
+    """Get a specific user by ID (admin only)."""
+    logger.debug("Getting user by ID: %s", user_id)
+
+    try:
+        user = await user_service.get_user_by_id(user_id)
+        if not user:
+            logger.warning("User not found: %s", user_id)
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+
+        logger.info("Retrieved user: %s", user_id)
+        return user
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Error getting user: %s", str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error"
+        )
+
+
 @router.put("/users/{user_id}", response_model=User, name="api_admin_update_user")
 async def update_user(
     user_id: str,

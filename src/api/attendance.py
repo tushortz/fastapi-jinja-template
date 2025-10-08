@@ -8,9 +8,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from src.auth import get_current_user
 from src.models.attendance import (
-    Attendance, AttendanceCreate, AttendanceStatistics, AttendanceStatus,
-    AttendanceSummary, AttendanceType, AttendanceUpdate, BulkAttendanceResult,
-    ServiceAttendance,
+    Attendance, AttendanceCreate, AttendanceStatistics, AttendanceSummary,
+    AttendanceType, AttendanceUpdate, BulkAttendanceResult, ServiceAttendance,
 )
 from src.models.users import User
 from src.services.attendance import AttendanceService
@@ -24,13 +23,6 @@ async def get_attendance_types() -> list[str]:
     return [t.value for t in AttendanceType]
 
 
-@router.get("/enums/statuses", name="api_get_attendance_statuses")
-async def get_attendance_statuses() -> list[str]:
-    """Return list of attendance statuses (enum values)."""
-    return [s.value for s in AttendanceStatus]
-
-
-
 @router.post("/bulk", status_code=status.HTTP_201_CREATED, name="api_create_bulk_attendance")
 async def create_bulk_attendance(
     bulk_data: dict[str, Any],
@@ -39,14 +31,14 @@ async def create_bulk_attendance(
     """Create multiple attendance records at once."""
     logger.info(
         "Creating bulk attendance records for %d members on %s",
-        len(bulk_data.get("members", [])),
+        len(bulk_data.get("member_ids", [])),
         bulk_data.get("attendance_date"),
     )
 
     try:
         attendance_service = AttendanceService()
         result = await attendance_service.create_bulk_attendance(bulk_data)
-        logger.info("Bulk attendance records created successfully: %d records", result["created_count"])
+        logger.info("Bulk attendance records created successfully: %d records", result.created_count)
         return result
     except ValueError as e:
         logger.warning("Failed to create bulk attendance records: %s", str(e))
@@ -69,8 +61,8 @@ async def create_attendance(
 ) -> Attendance:
     """Create a new attendance record."""
     logger.info(
-        "Creating attendance record for member %s on %s",
-        attendance_create.member_id,
+        "Creating attendance record for %d members on %s",
+        len(attendance_create.member_ids),
         attendance_create.attendance_date,
     )
 
@@ -93,6 +85,74 @@ async def create_attendance(
         )
 
 
+@router.get("/records", name="api_get_attendance_records_list")
+async def get_attendance_records_list(
+    skip: int = Query(0, ge=0, description="Number of records to skip"),
+    limit: int = Query(25, ge=1, le=100, description="Number of records to return"),
+    start_date: date | None = Query(None, description="Filter by start date"),
+    end_date: date | None = Query(None, description="Filter by end date"),
+    attendance_type: AttendanceType | None = Query(None, description="Filter by attendance type"),
+    current_user: User = Depends(get_current_user),
+) -> dict[str, Any]:
+    """Get attendance records list with pagination and date filtering."""
+    logger.info("Getting attendance records list: skip=%d, limit=%d, user=%s", skip, limit, current_user.email)
+
+    try:
+        attendance_service = AttendanceService()
+
+        # Get attendance records with filters
+        attendance_records = await attendance_service.get_attendance_records(
+            skip=skip, limit=limit, attendance_type=attendance_type
+        )
+
+        # Apply date filtering if provided
+        if start_date or end_date:
+            filtered_records = []
+            for record in attendance_records:
+                record_date = record.attendance_date
+                if start_date and record_date < start_date:
+                    continue
+                if end_date and record_date > end_date:
+                    continue
+                filtered_records.append(record)
+            attendance_records = filtered_records
+
+        # Get total count for pagination
+        total_count = await attendance_service.count_attendance_records(
+            attendance_type=attendance_type, start_date=start_date, end_date=end_date
+        )
+
+        # Format records for display
+        records_data = []
+        for record in attendance_records:
+            records_data.append({
+                "id": record.id,
+                "attendance_type": record.attendance_type,
+                "attendance_date": record.attendance_date.isoformat(),
+                "member_count": len(record.member_ids),
+                "notes": record.notes,
+                "recorded_by": record.recorded_by,
+                "created_at": record.created_at.isoformat() if record.created_at else None
+            })
+
+        logger.info("Retrieved %d attendance records", len(records_data))
+
+        return {
+            "records": records_data,
+            "total_count": total_count,
+            "skip": skip,
+            "limit": limit,
+            "has_more": skip + len(records_data) < total_count
+        }
+
+    except Exception as e:
+        logger.error("Error getting attendance records list: %s", str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error"
+        )
+
+
 @router.get("/", response_model=list[Attendance], name="api_get_attendance_records")
 async def get_attendance_records(
     skip: int = Query(0, ge=0, description="Number of records to skip"),
@@ -100,7 +160,6 @@ async def get_attendance_records(
     search: str | None = Query(None, description="Search term"),
     member_id: str | None = Query(None, description="Filter by member ID"),
     attendance_type: AttendanceType | None = Query(None, description="Filter by attendance type"),
-    status: AttendanceStatus | None = Query(None, description="Filter by attendance status"),
     current_user: User = Depends(get_current_user),
 ) -> list[Attendance]:
     """Get all attendance records with pagination and optional filters."""
@@ -110,7 +169,7 @@ async def get_attendance_records(
         attendance_service = AttendanceService()
         attendance_records = await attendance_service.get_attendance_records(
             skip=skip, limit=limit, search=search, member_id=member_id,
-            attendance_type=attendance_type, status=status
+            attendance_type=attendance_type
         )
         logger.info("Retrieved %d attendance records", len(attendance_records))
         return attendance_records
@@ -299,12 +358,12 @@ async def get_attendance_trends(
         )
 
 
-@router.get("/{attendance_id}", response_model=Attendance, name="api_get_attendance")
+@router.get("/{attendance_id}", name="api_get_attendance")
 async def get_attendance(
     attendance_id: str,
     current_user: User = Depends(get_current_user),
-) -> Attendance:
-    """Get a specific attendance record by ID."""
+) -> dict:
+    """Get a specific attendance record by ID with user data."""
     logger.debug("Getting attendance record by ID: %s", attendance_id)
 
     try:

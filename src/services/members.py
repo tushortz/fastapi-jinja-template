@@ -10,6 +10,7 @@ from src.models.members import (
 )
 from src.repositories.members import MemberRepository
 from src.services.insights import MemberInsightService
+from src.utils.date import get_current_date
 
 logger = logging.getLogger(__name__)
 
@@ -496,8 +497,8 @@ class MemberService:
                 recent_registrations=0,  # TODO: Implement recent registrations
                 birthday_this_month=birthdays_this_month,
                 birthday_today=birthdays_today,
-                created_at=datetime.now(),
-                updated_at=datetime.now()
+                created_at=get_current_date(),
+                updated_at=get_current_date()
             )
         except Exception as e:
             logger.error("Error getting member statistics: %s", str(e))

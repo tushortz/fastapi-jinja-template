@@ -10,6 +10,7 @@ from src.models.attendance import (
 )
 from src.repositories.attendance import AttendanceRepository
 from src.services.attendance import AttendanceService
+from src.utils.date import get_current_date
 
 
 class TestAttendanceModel:
@@ -39,8 +40,8 @@ class TestAttendanceModel:
                 attendance_type=AttendanceType.SUNDAY_SERVICE,
                 status=AttendanceStatus.PRESENT,
                 recorded_by="507f1f77bcf86cd799439012",
-                created_at=datetime.now(),
-                updated_at=datetime.now()
+                created_at=get_current_date(),
+                updated_at=get_current_date()
             )
 
 
@@ -71,8 +72,8 @@ class TestAttendanceRepository:
                 "attendance_type": AttendanceType.SUNDAY_SERVICE,
                 "status": AttendanceStatus.PRESENT,
                 "recorded_by": "507f1f77bcf86cd799439013",
-                "created_at": datetime.now(),
-                "updated_at": datetime.now()
+                "created_at": get_current_date(),
+                "updated_at": get_current_date()
             }
         ]
         mock_collection.find.return_value.sort.return_value.skip.return_value.limit.return_value.to_list.return_value = mock_docs
@@ -96,8 +97,8 @@ class TestAttendanceRepository:
                 "attendance_type": AttendanceType.SUNDAY_SERVICE,
                 "status": AttendanceStatus.PRESENT,
                 "recorded_by": "507f1f77bcf86cd799439013",
-                "created_at": datetime.now(),
-                "updated_at": datetime.now()
+                "created_at": get_current_date(),
+                "updated_at": get_current_date()
             }
         ]
         mock_collection.find.return_value.sort.return_value.to_list.return_value = mock_docs
@@ -192,8 +193,8 @@ class TestAttendanceService:
             attendance_type=AttendanceType.SUNDAY_SERVICE,
             status=AttendanceStatus.PRESENT,
             recorded_by="507f1f77bcf86cd799439013",
-            created_at=datetime.now(),
-            updated_at=datetime.now()
+            created_at=get_current_date(),
+            updated_at=get_current_date()
         )
         mock_attendance_repo.create.return_value = mock_attendance_in_db
 
@@ -203,8 +204,8 @@ class TestAttendanceService:
             attendance_type=AttendanceType.SUNDAY_SERVICE,
             status=AttendanceStatus.PRESENT,
             recorded_by="507f1f77bcf86cd799439013",
-            created_at=datetime.now(),
-            updated_at=datetime.now()
+            created_at=get_current_date(),
+            updated_at=get_current_date()
         )
 
         result = await attendance_service.create_attendance(attendance_create)
@@ -226,8 +227,8 @@ class TestAttendanceService:
             attendance_type=AttendanceType.SUNDAY_SERVICE,
             status=AttendanceStatus.PRESENT,
             recorded_by="507f1f77bcf86cd799439013",
-            created_at=datetime.now(),
-            updated_at=datetime.now()
+            created_at=get_current_date(),
+            updated_at=get_current_date()
         )
 
         with pytest.raises(ValueError, match="Attendance record already exists"):
@@ -246,8 +247,8 @@ class TestAttendanceService:
             attendance_type=AttendanceType.SUNDAY_SERVICE,
             status=AttendanceStatus.PRESENT,
             recorded_by="507f1f77bcf86cd799439013",
-            created_at=datetime.now(),
-            updated_at=datetime.now()
+            created_at=get_current_date(),
+            updated_at=get_current_date()
         )
         mock_attendance_repo.get_by_id.return_value = mock_attendance_in_db
 
@@ -279,8 +280,8 @@ class TestAttendanceService:
                 attendance_type=AttendanceType.SUNDAY_SERVICE,
                 status=AttendanceStatus.PRESENT,
                 recorded_by="507f1f77bcf86cd799439013",
-                created_at=datetime.now(),
-                updated_at=datetime.now()
+                created_at=get_current_date(),
+                updated_at=get_current_date()
             )
         ]
         mock_attendance_repo.get_by_member_id.return_value = mock_attendance_records

@@ -410,3 +410,23 @@ async def create_attendance_form_page(request: Request):
     return templates.TemplateResponse(
         "attendance/create.html", {"request": request, "user": current_user}
     )
+
+
+@router.get("/attendance/{attendance_id}/view", response_class=HTMLResponse, name="view_attendance")
+@require_active_user
+async def view_attendance_page(request: Request, attendance_id: str):
+    """View attendance record page."""
+    current_user = await get_current_user_from_cookie(request)
+    return templates.TemplateResponse(
+        "attendance/view.html", {"request": request, "user": current_user}
+    )
+
+
+@router.get("/attendance/{attendance_id}/edit", response_class=HTMLResponse, name="edit_attendance")
+@require_active_user
+async def edit_attendance_page(request: Request, attendance_id: str):
+    """Edit attendance record page."""
+    current_user = await get_current_user_from_cookie(request)
+    return templates.TemplateResponse(
+        "attendance/edit.html", {"request": request, "user": current_user}
+    )

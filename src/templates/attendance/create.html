@@ -70,14 +70,6 @@
 
         <!-- Quick Actions -->
         <div x-show="selectedMembers.length > 0" class="mt-4 flex space-x-2">
-          <button type="button" @click="selectAllPresent()"
-                  class="px-3 py-1 text-xs bg-green-100 text-green-800 rounded-md hover:bg-green-200">
-            <i class="fas fa-check mr-1"></i>Mark All Present
-          </button>
-          <button type="button" @click="selectAllAbsent()"
-                  class="px-3 py-1 text-xs bg-red-100 text-red-800 rounded-md hover:bg-red-200">
-            <i class="fas fa-times mr-1"></i>Mark All Absent
-          </button>
           <button type="button" @click="clearAllMembers()"
                   class="px-3 py-1 text-xs bg-gray-100 text-gray-800 rounded-md hover:bg-gray-200">
             <i class="fas fa-trash mr-1"></i>Clear All
@@ -107,31 +99,24 @@
         </div>
       </div>
 
-      <!-- Individual Member Status -->
+      <!-- Selected Members -->
       <div x-show="selectedMembers.length > 0" class="bg-gray-50 p-4 rounded-lg">
-        <h2 class="text-lg font-semibold text-gray-900 mb-4">Attendance Status for Each Member</h2>
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">Members Who Attended</h2>
         <div class="space-y-3">
           <template x-for="member in selectedMembers" :key="member.id">
             <div class="bg-white border border-gray-200 rounded-lg p-4">
               <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-3">
-                  <i class="fas fa-user text-gray-400"></i>
+                  <i class="fas fa-user text-green-500"></i>
                   <div>
                     <p class="text-sm font-medium text-gray-900" x-text="member.first_name + ' ' + (member.last_name || '')"></p>
                     <p class="text-xs text-gray-500" x-text="member.email || ''"></p>
                   </div>
                 </div>
-                <div x-data="enumSelect('/api/attendance/enums/statuses')" class="flex items-center space-x-3">
-                  <label class="text-sm font-medium text-gray-700">Status:</label>
-                  <select :name="`member_${member.id}_status`" :id="`status_${member.id}`"
-                          class="px-3 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          required>
-                    <option value="">Select Status</option>
-                    <template x-for="v in values" :key="v">
-                      <option :value="v" x-text="v.replace('_',' ').replace(/\b\w/g, l => l.toUpperCase())"></option>
-                    </template>
-                  </select>
-                </div>
+                <button type="button" @click="removeMember(member.id)"
+                        class="px-3 py-1 text-sm text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md transition-colors">
+                  <i class="fas fa-times mr-1"></i>Remove
+                </button>
               </div>
             </div>
           </template>
@@ -221,28 +206,8 @@ document.getElementById('attendanceForm').addEventListener('submit', async funct
       attendance_type: data.attendance_type,
       recorded_by: data.recorded_by,
       notes: data.notes || '',
-      members: []
+      member_ids: memberSearchComponent.selectedMembers.map(member => member.id)
     };
-
-    // Collect member statuses
-    let allStatusesValid = true;
-    memberSearchComponent.selectedMembers.forEach(member => {
-      const statusField = document.getElementById(`status_${member.id}`);
-      if (!statusField || !statusField.value) {
-        allStatusesValid = false;
-        return;
-      }
-
-      bulkData.members.push({
-        member_id: member.id,
-        status: statusField.value
-      });
-    });
-
-    if (!allStatusesValid) {
-      Alpine.store('toastStore')?.add('Please select attendance status for all members.', 'error');
-      return;
-    }
 
     const response = await apiCall('/api/attendance/bulk', {
       method: 'POST',
@@ -309,24 +274,6 @@ function memberSearch() {
 
     clearAllMembers() {
       this.selectedMembers = [];
-    },
-
-    selectAllPresent() {
-      this.selectedMembers.forEach(member => {
-        const statusField = document.getElementById(`status_${member.id}`);
-        if (statusField) {
-          statusField.value = 'present';
-        }
-      });
-    },
-
-    selectAllAbsent() {
-      this.selectedMembers.forEach(member => {
-        const statusField = document.getElementById(`status_${member.id}`);
-        if (statusField) {
-          statusField.value = 'absent';
-        }
-      });
     },
 
     async loadRecent() {

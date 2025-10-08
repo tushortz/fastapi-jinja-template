@@ -5,6 +5,7 @@ from datetime import date, datetime, timedelta
 from typing import Any
 
 from src.models.events import CalendarEventInDB, EventStatistics
+from src.utils.date import get_current_date
 
 from .base import BaseRepository
 
@@ -336,6 +337,6 @@ class CalendarEventRepository(BaseRepository):
             timed_events=timed_count,
             public_events=public_count,
             private_events=private_count,
-            created_at=datetime.now(),
-            updated_at=datetime.now()
+            created_at=get_current_date(),
+            updated_at=get_current_date()
         )

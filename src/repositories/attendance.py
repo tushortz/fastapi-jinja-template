@@ -7,9 +7,11 @@ from typing import Any
 from pydantic import BaseModel
 
 from src.models.attendance import (
-    AttendanceInDB, AttendanceStatistics, AttendanceStatus, AttendanceTrend,
-    AttendanceType, MemberAttendanceSummaryRepo, ServiceAttendanceSummaryRepo,
+    AttendanceInDB, AttendanceStatistics, AttendanceTrend, AttendanceType,
+    MemberAttendanceSummaryRepo, ServiceAttendanceSummaryRepo,
 )
+from src.repositories.users import UserRepository
+from src.utils.date import get_current_date
 
 from .base import BaseRepository
 
@@ -21,6 +23,48 @@ class AttendanceRepository(BaseRepository):
 
     def __init__(self):
         super().__init__(AttendanceInDB, "attendance")
+        self.user_repo = UserRepository()
+
+    async def get_attendance_with_user(self, attendance_id: str) -> dict | None:
+        """Get attendance record with user data for recorded_by field."""
+        logger.debug("Getting attendance with user data for ID: %s", attendance_id)
+
+        try:
+            # Get the attendance record
+            attendance = await self.get_by_id(attendance_id)
+            if not attendance:
+                logger.warning("Attendance record not found: %s", attendance_id)
+                return None
+
+            # Convert attendance to dict
+            attendance_dict = attendance.model_dump()
+
+            # Fetch user data for recorded_by
+            if attendance.recorded_by:
+                user = await self.user_repo.get_by_id(attendance.recorded_by)
+                if user:
+                    attendance_dict["recorded_by_user"] = {
+                        "id": user.id,
+                        "email": user.email,
+                        "username": user.username,
+                        "first_name": getattr(user, 'first_name', None),
+                        "last_name": getattr(user, 'last_name', None),
+                        "is_active": user.is_active,
+                        "is_admin": user.is_admin
+                    }
+                    logger.debug("User data fetched for recorded_by: %s", user.username)
+                else:
+                    logger.warning("User not found for recorded_by: %s", attendance.recorded_by)
+                    attendance_dict["recorded_by_user"] = None
+            else:
+                attendance_dict["recorded_by_user"] = None
+
+            logger.info("Attendance with user data retrieved successfully: %s", attendance_id)
+            return attendance_dict
+
+        except Exception as e:
+            logger.error("Error getting attendance with user data: %s", str(e))
+            return None
 
     async def get_by_member_id(
         self, member_id: str, skip: int = 0, limit: int = 100
@@ -29,7 +73,7 @@ class AttendanceRepository(BaseRepository):
         logger.debug("Getting attendance for member: %s", member_id)
         collection = await self.get_collection()
         cursor = (
-            collection.find({"member_id": member_id})
+            collection.find({"member_ids": member_id})
             .sort("attendance_date", -1)
             .skip(skip)
             .limit(limit)
@@ -110,7 +154,7 @@ class AttendanceRepository(BaseRepository):
         pipeline = [
             {
                 "$match": {
-                    "member_id": member_id,
+                    "member_ids": member_id,
                     "attendance_date": {
                         "$gte": start_date.isoformat(),
                         "$lte": end_date.isoformat()
@@ -119,8 +163,13 @@ class AttendanceRepository(BaseRepository):
             },
             {
                 "$group": {
-                    "_id": "$status",
-                    "count": {"$sum": 1}
+                    "_id": None,
+                    "total_services": {"$sum": 1},
+                    "attendance_count": {
+                        "$sum": {
+                            "$cond": [{"$in": [member_id, "$member_ids"]}, 1, 0]
+                        }
+                    }
                 }
             }
         ]
@@ -129,40 +178,24 @@ class AttendanceRepository(BaseRepository):
         results = await cursor.to_list(length=None)
 
         total_services = 0
-        present_count = 0
-        absent_count = 0
-        late_count = 0
-        excused_count = 0
+        attendance_count = 0
 
         for result in results:
-            status = result["_id"]
-            count = result["count"]
-            total_services += count
-
-            if status == AttendanceStatus.PRESENT:
-                present_count = count
-            elif status == AttendanceStatus.ABSENT:
-                absent_count = count
-            elif status == AttendanceStatus.LATE:
-                late_count = count
-            elif status == AttendanceStatus.EXCUSED:
-                excused_count = count
+            total_services = result.get("total_services", 0)
+            attendance_count = result.get("attendance_count", 0)
 
         # Calculate attendance rate
-        attendance_rate = (present_count / total_services * 100) if total_services > 0 else 0.0
+        attendance_rate = (attendance_count / total_services * 100) if total_services > 0 else 0.0
 
         return MemberAttendanceSummaryRepo(
             member_id=member_id,
             total_services=total_services,
-            present_count=present_count,
-            absent_count=absent_count,
-            late_count=late_count,
-            excused_count=excused_count,
+            attendance_count=attendance_count,
             attendance_rate=round(attendance_rate, 2),
             start_date=start_date,
             end_date=end_date,
-            created_at=datetime.now(),
-            updated_at=datetime.now()
+            created_at=get_current_date(),
+            updated_at=get_current_date()
         )
 
     async def get_service_attendance_summary(
@@ -186,8 +219,9 @@ class AttendanceRepository(BaseRepository):
             },
             {
                 "$group": {
-                    "_id": "$status",
-                    "count": {"$sum": 1}
+                    "_id": None,
+                    "total_services": {"$sum": 1},
+                    "total_attended": {"$sum": {"$size": "$member_ids"}}
                 }
             }
         ]
@@ -195,56 +229,38 @@ class AttendanceRepository(BaseRepository):
         cursor = collection.aggregate(pipeline)
         results = await cursor.to_list(length=None)
 
-        total_members = 0
-        present_members = 0
-        absent_members = 0
-        late_members = 0
-        excused_members = 0
+        total_services = 0
+        total_attended = 0
 
         for result in results:
-            status = result["_id"]
-            count = result["count"]
-            total_members += count
-
-            if status == AttendanceStatus.PRESENT:
-                present_members = count
-            elif status == AttendanceStatus.ABSENT:
-                absent_members = count
-            elif status == AttendanceStatus.LATE:
-                late_members = count
-            elif status == AttendanceStatus.EXCUSED:
-                excused_members = count
+            total_services = result.get("total_services", 0)
+            total_attended = result.get("total_attended", 0)
 
         # Calculate attendance rate
-        attendance_rate = (present_members / total_members * 100) if total_members > 0 else 0.0
+        attendance_rate = (total_attended / total_services * 100) if total_services > 0 else 0.0
 
         return ServiceAttendanceSummaryRepo(
             service_date=attendance_date,
             service_type=attendance_type,
-            total_members=total_members,
-            present_members=present_members,
-            absent_members=absent_members,
-            late_members=late_members,
-            excused_members=excused_members,
+            total_members=total_services,  # This represents total services, not unique members
+            attended_members=total_attended,
             attendance_rate=round(attendance_rate, 2),
-            created_at=datetime.now(),
-            updated_at=datetime.now()
+            created_at=get_current_date(),
+            updated_at=get_current_date()
         )
 
     async def check_attendance_exists(
         self,
-        member_id: str,
         attendance_date: date,
         attendance_type: AttendanceType,
     ) -> bool:
-        """Check if attendance record already exists."""
+        """Check if attendance record already exists for a specific date and type."""
         logger.debug(
-            "Checking if attendance exists for member %s on %s for %s",
-            member_id, attendance_date, attendance_type
+            "Checking if attendance exists for %s on %s",
+            attendance_type, attendance_date
         )
         collection = await self.get_collection()
         doc = await collection.find_one({
-            "member_id": member_id,
             "attendance_date": attendance_date.isoformat(),
             "attendance_type": attendance_type
         })
@@ -297,22 +313,6 @@ class AttendanceRepository(BaseRepository):
         logger.debug("Getting recent attendance records")
         return await self.get_many(limit=limit, sort_by="created_at")
 
-    async def count_by_status(
-        self, status: AttendanceStatus, start_date: date | None = None, end_date: date | None = None
-    ) -> int:
-        """Count attendance records by status."""
-        logger.debug("Counting attendance records by status: %s", status)
-        collection = await self.get_collection()
-        query = {"status": status}
-
-        if start_date and end_date:
-            query["attendance_date"] = {
-                "$gte": start_date.isoformat(),
-                "$lte": end_date.isoformat()
-            }
-
-        return await collection.count_documents(query)
-
     async def get_attendance_trends(
         self, start_date: date, end_date: date, attendance_type: AttendanceType | None = None
     ) -> list[AttendanceTrend]:
@@ -338,22 +338,8 @@ class AttendanceRepository(BaseRepository):
                         "date": "$attendance_date",
                         "type": "$attendance_type"
                     },
-                    "total": {"$sum": 1},
-                    "present": {
-                        "$sum": {
-                            "$cond": [{"$eq": ["$status", AttendanceStatus.PRESENT]}, 1, 0]
-                        }
-                    },
-                    "absent": {
-                        "$sum": {
-                            "$cond": [{"$eq": ["$status", AttendanceStatus.ABSENT]}, 1, 0]
-                        }
-                    },
-                    "late": {
-                        "$sum": {
-                            "$cond": [{"$eq": ["$status", AttendanceStatus.LATE]}, 1, 0]
-                        }
-                    }
+                    "total_services": {"$sum": 1},
+                    "total_attended": {"$sum": {"$size": "$member_ids"}}
                 }
             },
             {"$sort": {"_id.date": 1}}
@@ -364,18 +350,16 @@ class AttendanceRepository(BaseRepository):
 
         trends = []
         for result in results:
-            attendance_rate = (result["present"] / result["total"]) * 100 if result["total"] > 0 else 0
+            attendance_rate = (result["total_attended"] / result["total_services"]) * 100 if result["total_services"] > 0 else 0
 
             trend = AttendanceTrend(
                 date=result["_id"]["date"],
                 service_type=result["_id"]["type"],
-                total_members=result["total"],
-                present_count=result["present"],
-                absent_count=result["absent"],
-                late_count=result["late"],
+                total_members=result["total_services"],
+                attended_count=result["total_attended"],
                 attendance_rate=round(attendance_rate, 2),
-                created_at=datetime.now(),
-                updated_at=datetime.now()
+                created_at=get_current_date(),
+                updated_at=get_current_date()
             )
             trends.append(trend)
 

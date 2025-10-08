@@ -1,0 +1,271 @@
+{% extends "base.html" %}
+
+{% block title %}View Attendance Record{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 py-8" x-data="attendanceView()">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Header -->
+    <div class="mb-8">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900">Attendance Record</h1>
+          <p class="mt-2 text-sm text-gray-600">View attendance details and member information</p>
+        </div>
+        <div class="flex space-x-3">
+          <a href="{{ url_for('attendance_list') }}"
+             class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition-colors">
+            <i class="fas fa-arrow-left mr-2"></i>Back to List
+          </a>
+          <button @click="editRecord()"
+                  class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
+            <i class="fas fa-edit mr-2"></i>Edit Record
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div x-show="loading" class="text-center py-12">
+      <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <p class="mt-2 text-gray-600">Loading attendance record...</p>
+    </div>
+
+    <!-- Error State -->
+    <div x-show="error" class="bg-red-50 border border-red-200 rounded-md p-4 mb-6">
+      <div class="flex">
+        <div class="flex-shrink-0">
+          <i class="fas fa-exclamation-circle text-red-400"></i>
+        </div>
+        <div class="ml-3">
+          <h3 class="text-sm font-medium text-red-800">Error</h3>
+          <div class="mt-2 text-sm text-red-700">
+            <p x-text="error"></p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Attendance Details -->
+    <div x-show="!loading && !error && attendance" class="space-y-6">
+      <!-- Basic Information Card -->
+      <div class="bg-white shadow rounded-lg">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h3 class="text-lg font-medium text-gray-900">Basic Information</h3>
+        </div>
+        <div class="px-6 py-4">
+          <dl class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div>
+              <dt class="text-sm font-medium text-gray-500">Service Type</dt>
+              <dd class="mt-1 text-sm text-gray-900">
+                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800"
+                      x-text="attendance ? attendance.attendance_type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : ''">
+                </span>
+              </dd>
+            </div>
+            <div>
+              <dt class="text-sm font-medium text-gray-500">Date</dt>
+              <dd class="mt-1 text-sm text-gray-900" x-text="attendance ? formatDate(attendance.attendance_date) : ''"></dd>
+            </div>
+            <div>
+              <dt class="text-sm font-medium text-gray-500">Members Attended</dt>
+              <dd class="mt-1 text-sm text-gray-900">
+                <div class="flex items-center">
+                  <i class="fas fa-users text-green-500 mr-2"></i>
+                  <span class="font-semibold" x-text="attendance ? attendance.member_ids.length : 0"></span>
+                  <span class="text-gray-500 ml-1">members</span>
+                </div>
+              </dd>
+            </div>
+            <div>
+              <dt class="text-sm font-medium text-gray-500">Recorded By</dt>
+              <dd class="mt-1 text-sm text-gray-900">
+                <span x-show="attendance && attendance.recorded_by_user"
+                      x-text="attendance.recorded_by_user ? `${attendance.recorded_by_user.first_name || ''} ${attendance.recorded_by_user.last_name || ''}`.trim() || attendance.recorded_by_user.username : 'Unknown User'"></span>
+                <span x-show="!attendance || !attendance.recorded_by_user" class="text-gray-500">Unknown User</span>
+              </dd>
+            </div>
+            <div>
+              <dt class="text-sm font-medium text-gray-500">Created At</dt>
+              <dd class="mt-1 text-sm text-gray-900" x-text="attendance ? formatDateTime(attendance.created_at) : ''"></dd>
+            </div>
+            <div>
+              <dt class="text-sm font-medium text-gray-500">Last Updated</dt>
+              <dd class="mt-1 text-sm text-gray-900" x-text="attendance ? formatDateTime(attendance.updated_at) : ''"></dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+
+      <!-- Notes Card -->
+      <div x-show="attendance && attendance.notes" class="bg-white shadow rounded-lg">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h3 class="text-lg font-medium text-gray-900">Notes</h3>
+        </div>
+        <div class="px-6 py-4">
+          <div class="bg-gray-50 rounded-lg p-4">
+            <p class="text-sm text-gray-900 whitespace-pre-wrap" x-text="attendance ? attendance.notes : ''"></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Members List Card -->
+      <div class="bg-white shadow rounded-lg">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h3 class="text-lg font-medium text-gray-900">Attending Members</h3>
+          <p class="mt-1 text-sm text-gray-500" x-text="attendance ? `${attendance.member_ids.length} members attended this service` : ''"></p>
+        </div>
+        <div class="px-6 py-4">
+          <div x-show="loadingMembers" class="text-center py-8">
+            <div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+            <p class="mt-2 text-sm text-gray-600">Loading member details...</p>
+          </div>
+
+          <div x-show="!loadingMembers && members.length > 0" class="space-y-3">
+            <template x-for="member in members" :key="member.id">
+              <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div class="flex items-center">
+                  <div class="flex-shrink-0">
+                    <div class="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                      <i class="fas fa-user text-blue-600"></i>
+                    </div>
+                  </div>
+                  <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-900"
+                       x-text="member ? `${member.first_name} ${member.last_name || ''}`.trim() : 'Unknown Member'"></p>
+                    <p class="text-sm text-gray-500" x-text="member.email"></p>
+                  </div>
+                </div>
+                <div class="flex items-center space-x-2">
+                  <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                    <i class="fas fa-check mr-1"></i>Present
+                  </span>
+                  <a :href="`/dashboard/members/${member.id}/view`"
+                     class="text-blue-600 hover:text-blue-900 text-sm">
+                    <i class="fas fa-eye"></i>
+                  </a>
+                </div>
+              </div>
+            </template>
+          </div>
+
+          <div x-show="!loadingMembers && members.length === 0" class="text-center py-8">
+            <i class="fas fa-users text-gray-300 text-4xl mb-2"></i>
+            <p class="text-sm text-gray-500">No member details available</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function attendanceView() {
+  return {
+    attendance: null,
+    members: [],
+    loading: true,
+    loadingMembers: false,
+    error: null,
+
+    async init() {
+      await this.loadAttendance();
+    },
+
+    async loadAttendance() {
+      try {
+        this.loading = true;
+        this.error = null;
+
+        const pathParts = window.location.pathname.split('/');
+        const attendanceId = pathParts[pathParts.length - 2]; // Get the ID before 'view'
+
+        // Validate that we have a proper attendance ID
+        if (!attendanceId || attendanceId === 'edit' || attendanceId === 'view') {
+          this.error = 'Invalid attendance record ID';
+          return;
+        }
+
+        const response = await apiCall(`/api/attendance/${attendanceId}`);
+
+        if (response.ok) {
+          this.attendance = await response.json();
+          await this.loadMembers();
+        } else if (response.status === 404) {
+          this.error = 'Attendance record not found';
+        } else if (response.status === 403) {
+          window.location.href = '/auth/login';
+        } else {
+          this.error = 'Failed to load attendance record';
+        }
+      } catch (error) {
+        console.error('Error loading attendance:', error);
+        this.error = 'An error occurred while loading the attendance record';
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async loadMembers() {
+      if (!this.attendance || !this.attendance.member_ids.length) {
+        return;
+      }
+
+      try {
+        this.loadingMembers = true;
+
+        // Load member details for each member_id
+        const memberPromises = this.attendance.member_ids.map(async (memberId) => {
+          try {
+            const response = await apiCall(`/api/members/${memberId}`);
+            if (response.ok) {
+              return await response.json();
+            }
+            return null;
+          } catch (error) {
+            console.error(`Error loading member ${memberId}:`, error);
+            return null;
+          }
+        });
+
+        const memberResults = await Promise.all(memberPromises);
+        this.members = memberResults.filter(member => member !== null);
+
+      } catch (error) {
+        console.error('Error loading members:', error);
+      } finally {
+        this.loadingMembers = false;
+      }
+    },
+
+    editRecord() {
+      if (this.attendance) {
+        window.location.href = `/dashboard/attendance/${this.attendance.id}/edit`;
+      }
+    },
+
+    formatDate(dateString) {
+      if (!dateString) return '';
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    },
+
+    formatDateTime(dateString) {
+      if (!dateString) return '';
+      const date = new Date(dateString);
+      return date.toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+  }
+}
+</script>
+{% endblock %}

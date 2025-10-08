@@ -23,22 +23,12 @@ class AttendanceType(str, Enum):
     OTHER = "other"
 
 
-class AttendanceStatus(str, Enum):
-    """Attendance status enumeration."""
-
-    PRESENT = "present"
-    ABSENT = "absent"
-    LATE = "late"
-    EXCUSED = "excused"
-
-
 class AttendanceBase(TimestampModel):
     """Base attendance model."""
 
-    member_id: str = Field(..., description="ID of the member")
+    member_ids: list[str] = Field(..., description="List of member IDs who attended")
     attendance_date: date = Field(..., description="Date of attendance")
     attendance_type: AttendanceType = Field(..., description="Type of service/event")
-    status: AttendanceStatus = Field(..., description="Attendance status")
     notes: str | None = Field(None, max_length=500, description="Additional notes")
     recorded_by: str = Field(..., description="ID of user who recorded the attendance")
 
@@ -59,10 +49,9 @@ class AttendanceCreate(AttendanceBase):
 class AttendanceUpdate(TimestampModel):
     """Attendance update model."""
 
+    member_ids: list[str] | None = None
     attendance_date: date | None = None
     attendance_type: AttendanceType | None = None
-    status: AttendanceStatus | None = None
-    # service_time removed
     notes: str | None = Field(None, max_length=500)
     recorded_by: str | None = None
 
@@ -95,10 +84,7 @@ class AttendanceSummary(TimestampModel):
     member_id: str
     member_name: str
     total_services: int = 0
-    present_count: int = 0
-    absent_count: int = 0
-    late_count: int = 0
-    excused_count: int = 0
+    attendance_count: int = 0
     attendance_rate: float = 0.0
     period_start: date
     period_end: date
@@ -107,7 +93,7 @@ class AttendanceSummary(TimestampModel):
         """Calculate attendance rate percentage."""
         if self.total_services == 0:
             return 0.0
-        return (self.present_count / self.total_services) * 100
+        return (self.attendance_count / self.total_services) * 100
 
 
 class ServiceAttendance(TimestampModel):
@@ -115,12 +101,8 @@ class ServiceAttendance(TimestampModel):
 
     service_date: date
     service_type: AttendanceType
-    # service_time removed
     total_members: int = 0
-    present_members: int = 0
-    absent_members: int = 0
-    late_members: int = 0
-    excused_members: int = 0
+    attended_members: int = 0
     attendance_rate: float = 0.0
     recorded_by: str
     notes: str | None = None
@@ -129,7 +111,7 @@ class ServiceAttendance(TimestampModel):
         """Calculate attendance rate percentage."""
         if self.total_members == 0:
             return 0.0
-        return (self.present_members / self.total_members) * 100
+        return (self.attended_members / self.total_members) * 100
 
 
 class MemberAttendanceSummaryRepo(TimestampModel):
@@ -137,10 +119,7 @@ class MemberAttendanceSummaryRepo(TimestampModel):
 
     member_id: str
     total_services: int = 0
-    present_count: int = 0
-    absent_count: int = 0
-    late_count: int = 0
-    excused_count: int = 0
+    attendance_count: int = 0
     attendance_rate: float = 0.0
     start_date: date
     end_date: date
@@ -152,10 +131,7 @@ class ServiceAttendanceSummaryRepo(TimestampModel):
     service_date: date
     service_type: AttendanceType
     total_members: int = 0
-    present_members: int = 0
-    absent_members: int = 0
-    late_members: int = 0
-    excused_members: int = 0
+    attended_members: int = 0
     attendance_rate: float = 0.0
 
 
@@ -165,9 +141,7 @@ class AttendanceTrend(TimestampModel):
     date: str  # ISO date string
     service_type: AttendanceType
     total_members: int = 0
-    present_count: int = 0
-    absent_count: int = 0
-    late_count: int = 0
+    attended_count: int = 0
     attendance_rate: float = 0.0
 
 
@@ -175,10 +149,7 @@ class AttendanceStatistics(TimestampModel):
     """Attendance statistics model."""
 
     total_records: int = 0
-    present_count: int = 0
-    absent_count: int = 0
-    late_count: int = 0
-    excused_count: int = 0
+    total_attended: int = 0
     attendance_rate: float = 0.0
     period_start: date | None = None
     period_end: date | None = None

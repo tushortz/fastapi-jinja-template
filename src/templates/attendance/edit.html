@@ -1,0 +1,417 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Attendance Record{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 py-8" x-data="attendanceEdit()">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Header -->
+    <div class="mb-8">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900">Edit Attendance Record</h1>
+          <p class="mt-2 text-sm text-gray-600">Update attendance details and member information</p>
+        </div>
+        <div class="flex space-x-3">
+          <a href="{{ url_for('attendance_list') }}"
+             class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition-colors">
+            <i class="fas fa-arrow-left mr-2"></i>Back to List
+          </a>
+          <button @click="viewRecord()"
+                  class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors">
+            <i class="fas fa-eye mr-2"></i>View Record
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div x-show="loading" class="text-center py-12">
+      <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <p class="mt-2 text-gray-600">Loading attendance record...</p>
+    </div>
+
+    <!-- Error State -->
+    <div x-show="error" class="bg-red-50 border border-red-200 rounded-md p-4 mb-6">
+      <div class="flex">
+        <div class="flex-shrink-0">
+          <i class="fas fa-exclamation-circle text-red-400"></i>
+        </div>
+        <div class="ml-3">
+          <h3 class="text-sm font-medium text-red-800">Error</h3>
+          <div class="mt-2 text-sm text-red-700">
+            <p x-text="error"></p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit Form -->
+    <div x-show="!loading && !error && attendance" class="space-y-6">
+      <form @submit.prevent="updateAttendance()" class="space-y-6">
+        <!-- Basic Information Card -->
+        <div class="bg-white shadow rounded-lg">
+          <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900">Basic Information</h3>
+          </div>
+          <div class="px-6 py-4 space-y-4">
+            <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+              <div>
+                <label for="attendance_type" class="block text-sm font-medium text-gray-700">Service Type</label>
+                <select id="attendance_type"
+                        x-model="formData.attendance_type"
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                  <option value="">Select service type...</option>
+                  <template x-for="type in attendanceTypes" :key="type">
+                    <option :value="type" x-text="type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())"></option>
+                  </template>
+                </select>
+              </div>
+              <div>
+                <label for="attendance_date" class="block text-sm font-medium text-gray-700">Date</label>
+                <input type="date"
+                       id="attendance_date"
+                       x-model="formData.attendance_date"
+                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Notes Card -->
+        <div class="bg-white shadow rounded-lg">
+          <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900">Notes</h3>
+            <p class="mt-1 text-sm text-gray-500">Add any additional notes about this attendance record</p>
+          </div>
+          <div class="px-6 py-4">
+            <textarea id="notes"
+                      x-model="formData.notes"
+                      rows="4"
+                      maxlength="500"
+                      class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                      placeholder="Enter any notes about this attendance record..."></textarea>
+            <p class="mt-2 text-sm text-gray-500">
+              <span x-text="formData.notes ? formData.notes.length : 0"></span>/500 characters
+            </p>
+          </div>
+        </div>
+
+        <!-- Members Management Card -->
+        <div class="bg-white shadow rounded-lg">
+          <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900">Attending Members</h3>
+            <p class="mt-1 text-sm text-gray-500">Manage which members attended this service</p>
+          </div>
+          <div class="px-6 py-4">
+            <!-- Member Search -->
+            <div class="mb-4">
+              <label for="member_search" class="block text-sm font-medium text-gray-700 mb-2">Add Members</label>
+              <div class="flex space-x-2">
+                <input type="text"
+                       id="member_search"
+                       x-model="memberSearch"
+                       @input="searchMembers()"
+                       class="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                       placeholder="Search for members to add...">
+                <button type="button"
+                        @click="clearSearch()"
+                        class="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                  Clear
+                </button>
+              </div>
+            </div>
+
+            <!-- Search Results -->
+            <div x-show="searchResults.length > 0" class="mb-4">
+              <h4 class="text-sm font-medium text-gray-700 mb-2">Search Results</h4>
+              <div class="space-y-2 max-h-40 overflow-y-auto border border-gray-200 rounded-md p-2">
+                <template x-for="member in searchResults" :key="member.id">
+                  <div class="flex items-center justify-between p-2 bg-gray-50 rounded">
+                    <div class="flex items-center">
+                      <div class="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center mr-3">
+                        <i class="fas fa-user text-blue-600 text-xs"></i>
+                      </div>
+                      <div>
+                        <p class="text-sm font-medium text-gray-900" x-text="member.full_name"></p>
+                        <p class="text-xs text-gray-500" x-text="member.email"></p>
+                      </div>
+                    </div>
+                    <button type="button"
+                            @click="addMember(member)"
+                            :disabled="isMemberSelected(member.id)"
+                            class="px-2 py-1 text-xs font-medium text-blue-600 hover:text-blue-900 disabled:opacity-50 disabled:cursor-not-allowed">
+                      <i class="fas fa-plus"></i>
+                    </button>
+                  </div>
+                </template>
+              </div>
+            </div>
+
+            <!-- Selected Members -->
+            <div x-show="selectedMembers.length > 0">
+              <h4 class="text-sm font-medium text-gray-700 mb-2">Selected Members</h4>
+              <div class="space-y-2">
+                <template x-for="member in selectedMembers" :key="member.id">
+                  <div class="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <div class="flex items-center">
+                      <div class="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center mr-3">
+                        <i class="fas fa-check text-green-600 text-xs"></i>
+                      </div>
+                      <div>
+                        <p class="text-sm font-medium text-gray-900" x-text="member.full_name"></p>
+                        <p class="text-xs text-gray-500" x-text="member.email"></p>
+                      </div>
+                    </div>
+                    <button type="button"
+                            @click="removeMember(member)"
+                            class="px-2 py-1 text-xs font-medium text-red-600 hover:text-red-900">
+                      <i class="fas fa-times"></i>
+                    </button>
+                  </div>
+                </template>
+              </div>
+            </div>
+
+            <!-- No Members Selected -->
+            <div x-show="selectedMembers.length === 0" class="text-center py-8">
+              <i class="fas fa-users text-gray-300 text-4xl mb-2"></i>
+              <p class="text-sm text-gray-500">No members selected for this attendance record</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="flex justify-end space-x-3">
+          <button type="button"
+                  @click="resetForm()"
+                  class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+            Reset
+          </button>
+          <button type="submit"
+                  :disabled="saving"
+                  class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed">
+            <span x-show="!saving">Update Attendance</span>
+            <span x-show="saving">
+              <i class="fas fa-spinner fa-spin mr-2"></i>Updating...
+            </span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+function attendanceEdit() {
+  return {
+    attendance: null,
+    attendanceTypes: [],
+    members: [],
+    selectedMembers: [],
+    searchResults: [],
+    memberSearch: '',
+    loading: true,
+    saving: false,
+    error: null,
+    formData: {
+      attendance_type: '',
+      attendance_date: '',
+      notes: '',
+      member_ids: []
+    },
+
+    async init() {
+      await Promise.all([
+        this.loadAttendance(),
+        this.loadAttendanceTypes(),
+        this.loadAllMembers()
+      ]);
+    },
+
+    async loadAttendance() {
+      try {
+        this.loading = true;
+        this.error = null;
+
+        const pathParts = window.location.pathname.split('/');
+        const attendanceId = pathParts[pathParts.length - 2]; // Get the ID before 'edit'
+
+        // Validate that we have a proper attendance ID
+        if (!attendanceId || attendanceId === 'edit' || attendanceId === 'view') {
+          this.error = 'Invalid attendance record ID';
+          return;
+        }
+
+        const response = await apiCall(`/api/attendance/${attendanceId}`);
+
+        if (response.ok) {
+          this.attendance = await response.json();
+          this.populateForm();
+        } else if (response.status === 404) {
+          this.error = 'Attendance record not found';
+        } else if (response.status === 403) {
+          window.location.href = '/auth/login';
+        } else {
+          this.error = 'Failed to load attendance record';
+        }
+      } catch (error) {
+        console.error('Error loading attendance:', error);
+        this.error = 'An error occurred while loading the attendance record';
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async loadAttendanceTypes() {
+      try {
+        const response = await apiCall('/api/attendance/enums/types');
+        if (response.ok) {
+          this.attendanceTypes = await response.json();
+        }
+      } catch (error) {
+        console.error('Error loading attendance types:', error);
+      }
+    },
+
+    async loadAllMembers() {
+      try {
+        const response = await apiCall('/api/members/?limit=1000');
+        if (response.ok) {
+          const data = await response.json();
+          this.members = data.members || [];
+        }
+      } catch (error) {
+        console.error('Error loading members:', error);
+      }
+    },
+
+    populateForm() {
+      if (this.attendance) {
+        this.formData = {
+          attendance_type: this.attendance.attendance_type,
+          attendance_date: this.attendance.attendance_date,
+          notes: this.attendance.notes || '',
+          member_ids: [...this.attendance.member_ids]
+        };
+
+        // Load selected members
+        this.loadSelectedMembers();
+      }
+    },
+
+    async loadSelectedMembers() {
+      if (!this.attendance || !this.attendance.member_ids.length) {
+        this.selectedMembers = [];
+        return;
+      }
+
+      try {
+        const memberPromises = this.attendance.member_ids.map(async (memberId) => {
+          try {
+            const response = await apiCall(`/api/members/${memberId}`);
+            if (response.ok) {
+              return await response.json();
+            }
+            return null;
+          } catch (error) {
+            console.error(`Error loading member ${memberId}:`, error);
+            return null;
+          }
+        });
+
+        const memberResults = await Promise.all(memberPromises);
+        this.selectedMembers = memberResults.filter(member => member !== null);
+
+      } catch (error) {
+        console.error('Error loading selected members:', error);
+      }
+    },
+
+    searchMembers() {
+      if (!this.memberSearch.trim()) {
+        this.searchResults = [];
+        return;
+      }
+
+      const searchTerm = this.memberSearch.toLowerCase();
+      this.searchResults = this.members.filter(member =>
+        member.full_name.toLowerCase().includes(searchTerm) ||
+        member.email.toLowerCase().includes(searchTerm)
+      ).slice(0, 10); // Limit to 10 results
+    },
+
+    clearSearch() {
+      this.memberSearch = '';
+      this.searchResults = [];
+    },
+
+    addMember(member) {
+      if (!this.isMemberSelected(member.id)) {
+        this.selectedMembers.push(member);
+        this.formData.member_ids.push(member.id);
+      }
+    },
+
+    removeMember(member) {
+      this.selectedMembers = this.selectedMembers.filter(m => m.id !== member.id);
+      this.formData.member_ids = this.formData.member_ids.filter(id => id !== member.id);
+    },
+
+    isMemberSelected(memberId) {
+      return this.formData.member_ids.includes(memberId);
+    },
+
+    async updateAttendance() {
+      try {
+        this.saving = true;
+
+        const pathParts = window.location.pathname.split('/');
+        const attendanceId = pathParts[pathParts.length - 2]; // Get the ID before 'edit'
+
+        // Validate that we have a proper attendance ID
+        if (!attendanceId || attendanceId === 'edit' || attendanceId === 'view') {
+          Alpine.store('toastStore')?.add('Invalid attendance record ID', 'error');
+          return;
+        }
+
+        const response = await apiCall(`/api/attendance/${attendanceId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(this.formData)
+        });
+
+        if (response.ok) {
+          Alpine.store('toastStore')?.add('Attendance record updated successfully', 'success');
+          // Redirect to view page
+          window.location.href = `/dashboard/attendance/${attendanceId}/view`;
+        } else if (response.status === 403) {
+          window.location.href = '/auth/login';
+        } else {
+          const errorData = await response.json();
+          Alpine.store('toastStore')?.add(errorData.detail || 'Failed to update attendance record', 'error');
+        }
+      } catch (error) {
+        console.error('Error updating attendance:', error);
+        Alpine.store('toastStore')?.add('An error occurred while updating the attendance record', 'error');
+      } finally {
+        this.saving = false;
+      }
+    },
+
+    resetForm() {
+      this.populateForm();
+      Alpine.store('toastStore')?.add('Form reset to original values', 'info');
+    },
+
+    viewRecord() {
+      if (this.attendance) {
+        window.location.href = `/dashboard/attendance/${this.attendance.id}/view`;
+      }
+    }
+  }
+}
+</script>
+{% endblock %}

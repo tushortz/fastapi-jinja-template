@@ -10,6 +10,7 @@ from src.models.members import (
 )
 from src.repositories.members import MemberRepository
 from src.services.members import MemberService
+from src.utils.date import get_current_date
 
 
 class TestMemberModel:
@@ -22,8 +23,8 @@ class TestMemberModel:
             first_name="John",
             last_name="Doe",
             middle_name="Michael",
-            created_at=datetime.now(),
-            updated_at=datetime.now()
+            created_at=get_current_date(),
+            updated_at=get_current_date()
         )
         assert member.full_name == "John Michael Doe"
 
@@ -33,8 +34,8 @@ class TestMemberModel:
             id="1",
             first_name="John",
             last_name="Doe",
-            created_at=datetime.now(),
-            updated_at=datetime.now()
+            created_at=get_current_date(),
+            updated_at=get_current_date()
         )
         assert member.full_name == "John Doe"
 
@@ -46,8 +47,8 @@ class TestMemberModel:
             first_name="John",
             last_name="Doe",
             date_of_birth=birth_date,
-            created_at=datetime.now(),
-            updated_at=datetime.now()
+            created_at=get_current_date(),
+            updated_at=get_current_date()
         )
         # Age calculation depends on current date, so we just check it's not None
         assert member.age is not None
@@ -59,8 +60,8 @@ class TestMemberModel:
             id="1",
             first_name="John",
             last_name="Doe",
-            created_at=datetime.now(),
-            updated_at=datetime.now()
+            created_at=get_current_date(),
+            updated_at=get_current_date()
         )
         assert member.age is None
 
@@ -72,8 +73,8 @@ class TestMemberModel:
             first_name="John",
             last_name="Doe",
             date_of_birth=today,
-            created_at=datetime.now(),
-            updated_at=datetime.now()
+            created_at=get_current_date(),
+            updated_at=get_current_date()
         )
         assert member.is_birthday_today is True
 
@@ -85,8 +86,8 @@ class TestMemberModel:
             first_name="John",
             last_name="Doe",
             date_of_birth=date(today.year, today.month, 15),
-            created_at=datetime.now(),
-            updated_at=datetime.now()
+            created_at=get_current_date(),
+            updated_at=get_current_date()
         )
         assert member.is_birthday_this_month is True
 
@@ -119,8 +120,8 @@ class TestMemberCreate:
                 first_name="John",
                 last_name="Doe",
                 phone="123",  # Too short
-                created_at=datetime.now(),
-                updated_at=datetime.now()
+                created_at=get_current_date(),
+                updated_at=get_current_date()
             )
 
     def test_member_create_future_date_validation(self):
@@ -131,8 +132,8 @@ class TestMemberCreate:
                 first_name="John",
                 last_name="Doe",
                 date_of_birth=future_date,
-                created_at=datetime.now(),
-                updated_at=datetime.now()
+                created_at=get_current_date(),
+                updated_at=get_current_date()
             )
 
 
@@ -160,8 +161,8 @@ class TestMemberRepository:
             "first_name": "John",
             "last_name": "Doe",
             "email": "john@example.com",
-            "created_at": datetime.now(),
-            "updated_at": datetime.now()
+            "created_at": get_current_date(),
+            "updated_at": get_current_date()
         }
         mock_collection.find_one.return_value = mock_doc
 
@@ -213,8 +214,8 @@ class TestMemberRepository:
                 "first_name": "John",
                 "last_name": "Doe",
                 "date_of_birth": today.isoformat(),
-                "created_at": datetime.now(),
-                "updated_at": datetime.now()
+                "created_at": get_current_date(),
+                "updated_at": get_current_date()
             }
         ]
         mock_collection.find.return_value.to_list.return_value = mock_docs
@@ -253,8 +254,8 @@ class TestMemberService:
             first_name="John",
             last_name="Doe",
             email="john@example.com",
-            created_at=datetime.now(),
-            updated_at=datetime.now()
+            created_at=get_current_date(),
+            updated_at=get_current_date()
         )
         mock_member_repo.create.return_value = mock_member_in_db
 
@@ -262,8 +263,8 @@ class TestMemberService:
             first_name="John",
             last_name="Doe",
             email="john@example.com",
-            created_at=datetime.now(),
-            updated_at=datetime.now()
+            created_at=get_current_date(),
+            updated_at=get_current_date()
         )
 
         result = await member_service.create_member(member_create)
@@ -283,8 +284,8 @@ class TestMemberService:
             first_name="John",
             last_name="Doe",
             email="john@example.com",
-            created_at=datetime.now(),
-            updated_at=datetime.now()
+            created_at=get_current_date(),
+            updated_at=get_current_date()
         )
 
         with pytest.raises(ValueError, match="Email already registered"):
@@ -304,8 +305,8 @@ class TestMemberService:
             last_name="Doe",
             email="john@example.com",
             phone="1234567890",
-            created_at=datetime.now(),
-            updated_at=datetime.now()
+            created_at=get_current_date(),
+            updated_at=get_current_date()
         )
 
         with pytest.raises(ValueError, match="Phone number already registered"):
@@ -322,8 +323,8 @@ class TestMemberService:
             id="1",
             first_name="John",
             last_name="Doe",
-            created_at=datetime.now(),
-            updated_at=datetime.now()
+            created_at=get_current_date(),
+            updated_at=get_current_date()
         )
         mock_member_repo.get_by_id.return_value = mock_member_in_db
 

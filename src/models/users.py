@@ -11,6 +11,8 @@ class UserBase(TimestampModel):
 
     email: EmailStr
     username: str = Field(..., min_length=3, max_length=50)
+    first_name: str | None = Field(None, max_length=100)
+    last_name: str | None = Field(None, max_length=100)
     is_active: bool = True
     is_admin: bool = False
 
@@ -26,6 +28,8 @@ class UserUpdate(TimestampModel):
 
     email: EmailStr | None = None
     username: str | None = Field(None, min_length=3, max_length=50)
+    first_name: str | None = Field(None, max_length=100)
+    last_name: str | None = Field(None, max_length=100)
     is_active: bool | None = None
     is_admin: bool | None = None
 
@@ -35,6 +39,8 @@ class UserProfileUpdate(TimestampModel):
 
     email: EmailStr | None = None
     username: str | None = Field(None, min_length=3, max_length=50)
+    first_name: str | None = Field(None, max_length=100)
+    last_name: str | None = Field(None, max_length=100)
     current_password: str | None = None
     new_password: str | None = Field(None, min_length=8)
 
