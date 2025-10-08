@@ -38,23 +38,23 @@
                    value="{{ member.date_of_birth.strftime('%Y-%m-%d') if member.date_of_birth else '' }}"
                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
           </div>
-          <div x-data="enumSelectPrefill('/api/members/enums/genders', '{{ member.gender or '' }}')" x-init="init()">
+          <div x-data="enumSelectPrefill('/api/members/enums/genders', '{{ member.gender or '' }}')" x-init="init(); console.log('Gender value:', '{{ member.gender or '' }}')">
             <label for="gender" class="block text-sm font-medium text-gray-700 mb-1">Gender</label>
-            <select id="gender" name="gender" x-model="current"
+            <select id="gender" name="gender"
                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
               <option value="">Select Gender</option>
               <template x-for="v in values" :key="v">
-                <option :value="v" x-text="v.replace('_',' ').replace(/\b\w/g, l => l.toUpperCase())"></option>
+                <option :value="v" :selected="v === current" x-text="v.replace('_',' ').replace(/\b\w/g, l => l.toUpperCase())"></option>
               </template>
             </select>
           </div>
-          <div x-data="enumSelectPrefill('/api/members/enums/marital-statuses', '{{ member.marital_status or '' }}')" x-init="init()">
+          <div x-data="enumSelectPrefill('/api/members/enums/marital-statuses', '{{ member.marital_status or '' }}')" x-init="init(); console.log('Marital status value:', '{{ member.marital_status or '' }}')">
             <label for="marital_status" class="block text-sm font-medium text-gray-700 mb-1">Marital Status</label>
-            <select id="marital_status" name="marital_status" x-model="current"
+            <select id="marital_status" name="marital_status"
                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
               <option value="">Select Marital Status</option>
               <template x-for="v in values" :key="v">
-                <option :value="v" x-text="v.replace('_',' ').replace(/\b\w/g, l => l.toUpperCase())"></option>
+                <option :value="v" :selected="v === current" x-text="v.replace('_',' ').replace(/\b\w/g, l => l.toUpperCase())"></option>
               </template>
             </select>
           </div>
@@ -103,31 +103,6 @@
         </div>
       </div>
 
-      <!-- Emergency Contact -->
-      <div class="bg-gray-50 p-4 rounded-lg">
-        <h2 class="text-lg font-semibold text-gray-900 mb-4">Emergency Contact</h2>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label for="emergency_contact_name" class="block text-sm font-medium text-gray-700 mb-1">Contact Name</label>
-            <input type="text" id="emergency_contact_name" name="emergency_contact_name"
-                   value="{{ member.emergency_contact_name or '' }}"
-                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-          </div>
-          <div>
-            <label for="emergency_contact_phone" class="block text-sm font-medium text-gray-700 mb-1">Contact Phone</label>
-            <input type="tel" id="emergency_contact_phone" name="emergency_contact_phone"
-                   value="{{ member.emergency_contact_phone or '' }}"
-                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-          </div>
-          <div>
-            <label for="emergency_contact_relationship" class="block text-sm font-medium text-gray-700 mb-1">Relationship</label>
-            <input type="text" id="emergency_contact_relationship" name="emergency_contact_relationship"
-                   value="{{ member.emergency_contact_relationship or '' }}"
-                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-          </div>
-        </div>
-      </div>
-
       <!-- Professional Information -->
       <div class="bg-gray-50 p-4 rounded-lg">
         <h2 class="text-lg font-semibold text-gray-900 mb-4">Professional Information</h2>
@@ -166,36 +141,25 @@
                    value="{{ member.membership_date.strftime('%Y-%m-%d') if member.membership_date else '' }}"
                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
           </div>
-          <div x-data="enumSelectPrefill('/api/members/enums/statuses', '{{ member.status }}')" x-init="init()">
+          <div x-data="enumSelectPrefill('/api/members/enums/statuses', '{{ member.status or '' }}')" x-init="init(); console.log('Status value:', '{{ member.status or '' }}')">
             <label for="status" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-            <select id="status" name="status" x-model="current"
+            <select id="status" name="status"
                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
               <template x-for="v in values" :key="v">
-                <option :value="v" x-text="v.replace('_',' ').replace(/\b\w/g, l => l.toUpperCase())"></option>
+                <option :value="v" :selected="v === current" x-text="v.replace('_',' ').replace(/\b\w/g, l => l.toUpperCase())"></option>
               </template>
             </select>
           </div>
-          <div x-data="enumSelectPrefill('/api/members/enums/roles', '{{ member.role or '' }}')" x-init="init()">
+          <div x-data="enumSelectPrefill('/api/members/enums/roles', '{{ member.role or '' }}')" x-init="init(); console.log('Role value:', '{{ member.role or '' }}')">
             <label for="role" class="block text-sm font-medium text-gray-700 mb-1">Role</label>
-            <select id="role" name="role" x-model="current"
+            <select id="role" name="role"
                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
               <option value="">Select Role</option>
               <template x-for="v in values" :key="v">
-                <option :value="v" x-text="v.replace('_',' ').replace(/\b\w/g, l => l.toUpperCase())"></option>
+                <option :value="v" :selected="v === current" x-text="v.replace('_',' ').replace(/\b\w/g, l => l.toUpperCase())"></option>
               </template>
             </select>
           </div>
-        </div>
-      </div>
-
-      <!-- Notes -->
-      <div class="bg-gray-50 p-4 rounded-lg">
-        <h2 class="text-lg font-semibold text-gray-900 mb-4">Additional Information</h2>
-        <div>
-          <label for="notes" class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-          <textarea id="notes" name="notes" rows="4"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Any additional notes about the member...">{{ member.notes or '' }}</textarea>
         </div>
       </div>
 
@@ -218,15 +182,18 @@
 function enumSelectPrefill(endpoint, currentValue) {
   return {
     values: [],
-    current: currentValue || '',
+    current: '',
     async init() {
       try {
         const res = await apiCall(endpoint);
         if (res.ok) {
           this.values = await res.json();
+          this.current = currentValue || '';
+          console.log('Setting current value:', currentValue, 'for endpoint:', endpoint, 'values:', this.values);
         }
       } catch (e) {
         console.error('Failed to load enum values from', endpoint, e);
+        this.current = currentValue || '';
       }
     }
   }

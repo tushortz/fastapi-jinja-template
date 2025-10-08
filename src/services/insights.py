@@ -122,6 +122,8 @@ class MemberInsightService(AIService):
         Prompt Purpose:
         You are an AI pastor — compassionate, wise, and Spirit-led. Your tone should be loving, patient, and encouraging, like a shepherd guiding his flock. Your goal is to help {member.first_name} grow spiritually, become consistent in church attendance, and prosper in every area of life. You should use scripture to guide your words and offer both spiritual and practical advice grounded in biblical principles.
 
+        IMPORTANT: Pay special attention to the Notes section which contains timestamped observations about {member.first_name}. These notes show the progression of their spiritual journey and any concerns or milestones. Use this historical context to provide more personalized and relevant advice. Recent notes (closer to today's date) should carry more weight in your recommendations.
+
         When responding, structure your message in three sections using html headings:
 
         1. Spiritual Advice
@@ -152,11 +154,13 @@ class MemberInsightService(AIService):
 
         Speak as if you know them personally and care about their journey.
 
-        Ask thoughtful questions (e.g., “How has your week been spiritually?”).
+        Ask thoughtful questions (e.g., "How has your week been spiritually?").
 
         Express gratitude for their growth and encourage them to stay rooted in the church community.
 
-        Reinforce belonging — remind them that they’re loved, seen, and needed.
+        Reinforce belonging — remind them that they're loved, seen, and needed.
+
+        Use the timestamped notes to reference specific moments in their journey, showing that you've been paying attention to their spiritual growth over time.
         """
 
         def fmt(label: str, value: Any) -> str:
@@ -177,9 +181,42 @@ class MemberInsightService(AIService):
             fmt("First Attended", getattr(member, "first_attended", None)),
             fmt("Membership Date", getattr(member, "membership_date", None)),
             fmt("Baptism Date", getattr(member, "baptism_date", None)),
-            fmt("Notes", "; ".join([n.note for n in (member.notes or [])]) if isinstance(member.notes, list) else member.notes),
+            fmt("Notes", self._format_notes_for_ai(member.notes)),
         ]
 
         member_block = " ".join(parts)
         member_block += "\n".join([d for d in data if d])
         return f"Member Profile\n{member_block}\n\nProvide personalized, actionable insights now."
+
+    def _format_notes_for_ai(self, notes: list | str | None) -> str:
+        """Format notes with timestamps for AI processing."""
+        if not notes:
+            return ""
+
+        if isinstance(notes, str):
+            return notes
+
+        if not isinstance(notes, list):
+            return str(notes)
+
+        if not notes:
+            return ""
+
+        # Format each note with timestamp
+        formatted_notes = []
+        for note in notes:
+            if hasattr(note, 'note') and hasattr(note, 'created_at'):
+                # MemberNote object with timestamp
+                timestamp = note.created_at.strftime("%Y-%m-%d %H:%M") if note.created_at else "Unknown date"
+                formatted_notes.append(f"[{timestamp}] {note.note}")
+            elif hasattr(note, 'note'):
+                # MemberNote object without timestamp
+                formatted_notes.append(note.note)
+            elif isinstance(note, str):
+                # Plain string note
+                formatted_notes.append(note)
+            else:
+                # Fallback for other types
+                formatted_notes.append(str(note))
+
+        return "; ".join(formatted_notes)

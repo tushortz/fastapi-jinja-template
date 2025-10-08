@@ -168,7 +168,7 @@ class MemberUpdate(TimestampModel):
     membership_date: date | None = None
     status: MemberStatus | None = None
     role: MemberRole | None = None
-    notes: list[MemberNote] | None = Field(None, max_length=1000)
+    notes: list[MemberNote] | None = None
     is_active: bool | None = None
     first_attended: date | None = None
 

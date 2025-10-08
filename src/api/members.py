@@ -7,8 +7,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from src.auth import get_current_user
 from src.models.members import (
-    Gender, MaritalStatus, Member, MemberCreate, MemberRole, MemberStatus, MemberUpdate,
-    Ministry,
+    Gender, MaritalStatus, Member, MemberCreate, MemberNote, MemberRole, MemberStatus,
+    MemberUpdate, Ministry,
 )
 from src.models.users import User
 from src.services.members import MemberService
@@ -291,3 +291,71 @@ async def get_ministries(
 ) -> list[str]:
     """Return available ministries from the enum."""
     return [m.value for m in Ministry]
+
+
+@router.post("/{member_id}/notes", response_model=Member, name="api_add_member_note")
+async def add_member_note(
+    member_id: str,
+    note_data: dict[str, str],
+    current_user: User = Depends(get_current_user),
+) -> Member:
+    """Add a note to a member."""
+    logger.info("Adding note to member: %s", member_id)
+
+    if not note_data.get("note") or not note_data["note"].strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Note content is required"
+        )
+
+    try:
+        member_service = MemberService()
+        member = await member_service.add_note(member_id, note_data["note"].strip())
+        if not member:
+            logger.warning("Member not found for adding note: %s", member_id)
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Member not found"
+            )
+
+        logger.info("Note added successfully to member: %s", member_id)
+        return member
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Error adding note to member: %s", str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error"
+        )
+
+
+@router.delete("/{member_id}/notes/{note_id}", response_model=Member, name="api_delete_member_note")
+async def delete_member_note(
+    member_id: str,
+    note_id: str,
+    current_user: User = Depends(get_current_user),
+) -> Member:
+    """Delete a note from a member."""
+    logger.info("Deleting note %s from member: %s", note_id, member_id)
+
+    try:
+        member_service = MemberService()
+        member = await member_service.delete_note(member_id, note_id)
+        if not member:
+            logger.warning("Member not found for deleting note: %s", member_id)
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Member not found"
+            )
+
+        logger.info("Note deleted successfully from member: %s", member_id)
+        return member
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Error deleting note from member: %s", str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error"
+        )

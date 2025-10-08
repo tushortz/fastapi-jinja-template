@@ -4,7 +4,8 @@ import logging
 from typing import Any
 
 from src.models.members import (
-    Member, MemberCreate, MemberInDB, MemberRole, MemberStatus, MemberUpdate,
+    Member, MemberCreate, MemberInDB, MemberNote, MemberRole, MemberStatus,
+    MemberUpdate,
 )
 from src.repositories.members import MemberRepository
 from src.services.insights import MemberInsightService
@@ -515,3 +516,129 @@ class MemberService:
         """Generate AI insight for a member."""
         insight_service = MemberInsightService()
         return await insight_service.generate_member_insights(member)
+
+    async def add_note(self, member_id: str, note_text: str) -> Member | None:
+        """Add a note to a member."""
+        logger.info("Adding note to member: %s", member_id)
+
+        # Get the current member
+        member_in_db = await self.member_repo.get_by_id(member_id)
+        if not member_in_db:
+            logger.warning("Member not found for adding note: %s", member_id)
+            return None
+
+        # Create a new note
+        new_note = MemberNote(note=note_text)
+
+        # Add the note to the existing notes list
+        current_notes = member_in_db.notes if member_in_db.notes else []
+        updated_notes = current_notes + [new_note]
+
+        # Update the member with the new notes
+        member_update = MemberUpdate(notes=updated_notes)
+        updated_member = await self.member_repo.update(member_id, member_update)
+
+        if not updated_member:
+            logger.warning("Failed to update member with new note: %s", member_id)
+            return None
+
+        logger.info("Note added successfully to member: %s", member_id)
+
+        # Return as Member model
+        return Member(
+            id=updated_member.id,
+            first_name=updated_member.first_name,
+            last_name=updated_member.last_name,
+            email=updated_member.email,
+            phone=updated_member.phone,
+            date_of_birth=updated_member.date_of_birth,
+            gender=updated_member.gender,
+            marital_status=updated_member.marital_status,
+            address=updated_member.address,
+            city=updated_member.city,
+            state=updated_member.state,
+            zip_code=updated_member.zip_code,
+            country=updated_member.country,
+            emergency_contact_name=updated_member.emergency_contact_name,
+            emergency_contact_phone=updated_member.emergency_contact_phone,
+            occupation=updated_member.occupation,
+            employer=updated_member.employer,
+            education_level=updated_member.education_level,
+            baptism_date=updated_member.baptism_date,
+            membership_date=updated_member.membership_date,
+            status=updated_member.status,
+            role=updated_member.role,
+            notes=updated_member.notes,
+            is_active=updated_member.is_active,
+            created_at=updated_member.created_at,
+            updated_at=updated_member.updated_at,
+        )
+
+    async def delete_note(self, member_id: str, note_id: str) -> Member | None:
+        """Delete a note from a member."""
+        logger.info("Deleting note %s from member: %s", note_id, member_id)
+
+        # Get the current member
+        member_in_db = await self.member_repo.get_by_id(member_id)
+        if not member_in_db:
+            logger.warning("Member not found for deleting note: %s", member_id)
+            return None
+
+        # Get current notes
+        current_notes = member_in_db.notes if member_in_db.notes else []
+
+        # Find and remove the note by ID or index
+        updated_notes = []
+        note_found = False
+
+        for i, note in enumerate(current_notes):
+            # Check if this is the note to delete (by ID or by index)
+            if (hasattr(note, 'id') and note.id == note_id) or (str(i) == note_id):
+                note_found = True
+                logger.info("Found note to delete at index %s", i)
+            else:
+                updated_notes.append(note)
+
+        if not note_found:
+            logger.warning("Note not found for deletion: %s", note_id)
+            return None
+
+        # Update the member with the filtered notes
+        member_update = MemberUpdate(notes=updated_notes)
+        updated_member = await self.member_repo.update(member_id, member_update)
+
+        if not updated_member:
+            logger.warning("Failed to update member after deleting note: %s", member_id)
+            return None
+
+        logger.info("Note deleted successfully from member: %s", member_id)
+
+        # Return as Member model
+        return Member(
+            id=updated_member.id,
+            first_name=updated_member.first_name,
+            last_name=updated_member.last_name,
+            email=updated_member.email,
+            phone=updated_member.phone,
+            date_of_birth=updated_member.date_of_birth,
+            gender=updated_member.gender,
+            marital_status=updated_member.marital_status,
+            address=updated_member.address,
+            city=updated_member.city,
+            state=updated_member.state,
+            zip_code=updated_member.zip_code,
+            country=updated_member.country,
+            emergency_contact_name=updated_member.emergency_contact_name,
+            emergency_contact_phone=updated_member.emergency_contact_phone,
+            occupation=updated_member.occupation,
+            employer=updated_member.employer,
+            education_level=updated_member.education_level,
+            baptism_date=updated_member.baptism_date,
+            membership_date=updated_member.membership_date,
+            status=updated_member.status,
+            role=updated_member.role,
+            notes=updated_member.notes,
+            is_active=updated_member.is_active,
+            created_at=updated_member.created_at,
+            updated_at=updated_member.updated_at,
+        )

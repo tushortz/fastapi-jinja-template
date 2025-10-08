@@ -29,6 +29,13 @@
             </div>
             </div>
             <div class="flex items-center space-x-2">
+              <a :href="`/dashboard/members/${member.id}/edit`"
+                 class="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                <i class="fas fa-edit mr-2"></i>Edit
+              </a>
+              <button @click="openAddNote()" class="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700">
+                <i class="fas fa-plus mr-2"></i>Add Note
+              </button>
               <button @click="openInsights()" class="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-purple-600 rounded-md hover:bg-purple-700">
                 <i class="fas fa-magic mr-2"></i>AI Insight
               </button>
@@ -56,7 +63,7 @@
                 <div class="flex items-center"><i class="fas fa-id-badge mr-2 text-gray-400"></i><span x-text="(member.status || '').replace('_',' ').replace(/\b\w/g, l => l.toUpperCase())"></span></div>
                 <div class="flex items-center" x-show="member.membership_date"><i class="fas fa-calendar-plus mr-2 text-gray-400"></i><span x-text="formatDate(member.membership_date)"></span></div>
                 <div class="flex items-center" x-show="member.baptism_date"><i class="fas fa-tint mr-2 text-gray-400"></i><span x-text="formatDate(member.baptism_date)"></span></div>
-                <div class="flex items-center" x-show="member.ministry"><i class="fas fa-people-group mr-2 text-gray-400"></i><span x-text="member.ministry.replace('_',' ').replace(/\b\w/g, l => l.toUpperCase())"></span></div>
+                <div class="flex items-center" x-show="member.ministry"><i class="fas fa-people-group mr-2 text-gray-400"></i><span x-text="member.ministry ? member.ministry.replace('_',' ').replace(/\b\w/g, l => l.toUpperCase()) : ''"></span></div>
                 <div class="flex items-center" x-show="member.first_attended"><i class="fas fa-calendar-check mr-2 text-gray-400"></i><span x-text="formatDate(member.first_attended)"></span></div>
               </div>
             </div>
@@ -68,8 +75,8 @@
               <h3 class="text-sm font-medium text-gray-500 uppercase tracking-wide">Personal</h3>
               <div class="mt-2 space-y-2 text-sm text-gray-700">
                 <div class="flex items-center" x-show="member.date_of_birth"><i class="fas fa-cake-candles mr-2 text-gray-400"></i><span x-text="formatDate(member.date_of_birth)"></span></div>
-                <div class="flex items-center" x-show="member.gender"><i class="fas fa-venus-mars mr-2 text-gray-400"></i><span x-text="member.gender.replace('_',' ').replace(/\b\w/g, l => l.toUpperCase())"></span></div>
-                <div class="flex items-center" x-show="member.marital_status"><i class="fas fa-ring mr-2 text-gray-400"></i><span x-text="member.marital_status.replace('_',' ').replace(/\b\w/g, l => l.toUpperCase())"></span></div>
+                <div class="flex items-center" x-show="member.gender"><i class="fas fa-venus-mars mr-2 text-gray-400"></i><span x-text="member.gender ? member.gender.replace('_',' ').replace(/\b\w/g, l => l.toUpperCase()) : ''"></span></div>
+                <div class="flex items-center" x-show="member.marital_status"><i class="fas fa-ring mr-2 text-gray-400"></i><span x-text="member.marital_status ? member.marital_status.replace('_',' ').replace(/\b\w/g, l => l.toUpperCase()) : ''"></span></div>
               </div>
             </div>
             <div>
@@ -93,18 +100,69 @@
           </div>
 
           <!-- Notes -->
-          <div x-show="member.notes && (Array.isArray(member.notes) ? member.notes.length > 0 : String(member.notes).trim().length > 0)" class="mt-2">
-            <h3 class="text-sm font-medium text-gray-500 uppercase tracking-wide">Notes</h3>
-            <div class="mt-2 space-y-2 text-sm text-gray-700">
+          <div x-show="member.notes && (Array.isArray(member.notes) ? member.notes.length > 0 : String(member.notes).trim().length > 0)" class="mt-6">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg font-semibold text-gray-900">Notes</h3>
+              <span class="text-sm text-gray-500" x-text="`${member.notes ? member.notes.length : 0} note${(member.notes ? member.notes.length : 0) !== 1 ? 's' : ''}`"></span>
+            </div>
+
+            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
               <template x-if="Array.isArray(member.notes)">
-                <ul class="list-disc pl-6 space-y-1">
-                  <template x-for="(n, i) in member.notes" :key="i">
-                    <li x-text="n.note || n"></li>
-                  </template>
-                </ul>
+                <div class="space-y-3">
+                  <!-- Pagination Controls -->
+                  <div x-show="member.notes.length > 25" class="flex items-center justify-between mb-4 pb-3 border-b border-gray-200">
+                    <div class="flex items-center space-x-2">
+                      <button @click="notesPage = Math.max(0, notesPage - 1)"
+                              :disabled="notesPage === 0"
+                              class="px-3 py-1 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <i class="fas fa-chevron-left mr-1"></i>Previous
+                      </button>
+                      <span class="text-sm text-gray-600" x-text="`Page ${notesPage + 1} of ${Math.ceil(member.notes.length / 25)}`"></span>
+                      <button @click="notesPage = Math.min(Math.ceil(member.notes.length / 25) - 1, notesPage + 1)"
+                              :disabled="notesPage >= Math.ceil(member.notes.length / 25) - 1"
+                              class="px-3 py-1 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                        Next<i class="fas fa-chevron-right ml-1"></i>
+                      </button>
+                    </div>
+                    <span class="text-sm text-gray-500" x-text="`Showing ${notesPage * 25 + 1}-${Math.min((notesPage + 1) * 25, member.notes.length)} of ${member.notes.length} notes`"></span>
+                  </div>
+
+                  <!-- Notes List -->
+                  <div class="space-y-4">
+                    <template x-for="(note, i) in member.notes.slice(notesPage * 25, (notesPage + 1) * 25)" :key="i">
+                      <div class="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
+                        <div class="flex items-start justify-between">
+                          <div class="flex-1">
+                            <p class="text-gray-800 leading-relaxed" x-text="note.note || note"></p>
+                          </div>
+                          <div class="ml-4 flex items-center space-x-3">
+                            <div class="text-right">
+                              <div class="text-xs text-gray-500" x-text="formatDate(note.created_at || note.updated_at)"></div>
+                              <div class="text-xs text-gray-400" x-text="formatTime(note.created_at || note.updated_at)"></div>
+                            </div>
+                            <button @click="deleteNote(note, i)"
+                                    class="text-red-500 hover:text-red-700 p-1 rounded transition-colors"
+                                    title="Delete note">
+                              <i class="fas fa-trash text-sm"></i>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </template>
+                  </div>
+
+                  <!-- No notes message for current page -->
+                  <div x-show="member.notes.slice(notesPage * 25, (notesPage + 1) * 25).length === 0" class="text-center py-8 text-gray-500">
+                    <i class="fas fa-sticky-note text-2xl mb-2"></i>
+                    <p>No notes on this page</p>
+                  </div>
+                </div>
               </template>
+
               <template x-if="!Array.isArray(member.notes)">
-                <p x-text="member.notes"></p>
+                <div class="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
+                  <p class="text-gray-800" x-text="member.notes"></p>
+                </div>
               </template>
             </div>
           </div>
@@ -158,6 +216,45 @@
         </div>
       </div>
 
+      <!-- Add Note Modal -->
+      <div x-show="showAddNote" class="fixed inset-0 z-50 flex items-center justify-center" style="display:none">
+        <div class="absolute inset-0 bg-black/50" @click="closeAddNote()"></div>
+        <div class="relative bg-white rounded-xl shadow-2xl border border-gray-200 w-11/12 sm:w-10/12 md:w-3/4 lg:w-2/3 max-w-2xl mx-4 sm:mx-6">
+          <!-- Header -->
+          <div class="bg-gradient-to-r from-green-600 to-emerald-600 px-6 py-4 flex items-center justify-between">
+            <h3 class="text-lg font-semibold text-white">Add Note</h3>
+            <button @click="closeAddNote()" class="text-white/90 hover:text-white"><i class="fas fa-times"></i></button>
+          </div>
+          <!-- Body -->
+          <div class="p-6">
+            <form @submit.prevent="submitNote()">
+              <div class="mb-4">
+                <label for="noteText" class="block text-sm font-medium text-gray-700 mb-2">Note</label>
+                <textarea
+                  id="noteText"
+                  x-model="newNote"
+                  rows="4"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  placeholder="Enter your note here..."
+                  required></textarea>
+              </div>
+              <div class="flex justify-end space-x-3">
+                <button type="button" @click="closeAddNote()"
+                        class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                  Cancel
+                </button>
+                <button type="submit"
+                        :disabled="!newNote.trim() || noteSubmitting"
+                        class="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                  <i class="fas fa-spinner fa-spin mr-2" x-show="noteSubmitting"></i>
+                  <span x-text="noteSubmitting ? 'Adding...' : 'Add Note'"></span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
       <div x-show="!loading && !member" class="text-center py-8">
         <i class="fas fa-exclamation-circle text-gray-400 text-2xl"></i>
         <p class="text-sm text-gray-500 mt-2">Member not found.</p>
@@ -176,6 +273,10 @@
       insightLoading: false,
       progress: 0,
       _progressTimer: null,
+      showAddNote: false,
+      newNote: '',
+      noteSubmitting: false,
+      notesPage: 0,
       async init() {
         try {
           const res = await apiCall(`/api/members/${memberId}`);
@@ -241,6 +342,86 @@
           this._progressTimer = null;
         }
         this.progress = 0;
+      },
+      openAddNote() {
+        this.showAddNote = true;
+        this.newNote = '';
+      },
+      closeAddNote() {
+        this.showAddNote = false;
+        this.newNote = '';
+        this.noteSubmitting = false;
+      },
+      async submitNote() {
+        if (!this.newNote.trim() || !this.member) return;
+
+        this.noteSubmitting = true;
+        try {
+          const res = await apiCall(`/api/members/${this.member.id}/notes`, {
+            method: 'POST',
+            body: JSON.stringify({ note: this.newNote.trim() })
+          });
+
+          if (res.ok) {
+            // Refresh member data to show the new note
+            const updatedMember = await apiCall(`/api/members/${this.member.id}`);
+            if (updatedMember.ok) {
+              this.member = await updatedMember.json();
+            }
+            Alpine.store('toastStore')?.add('Note added successfully!', 'success');
+            this.closeAddNote();
+            // Reset to first page to show the new note
+            this.notesPage = 0;
+          } else {
+            const error = await res.json();
+            Alpine.store('toastStore')?.add('Error adding note: ' + (error.detail || 'Unknown error'), 'error');
+          }
+        } catch (error) {
+          console.error('Error adding note:', error);
+          Alpine.store('toastStore')?.add('Error adding note. Please try again.', 'error');
+        } finally {
+          this.noteSubmitting = false;
+        }
+      },
+      async deleteNote(note, index) {
+        if (!this.member || !note) return;
+
+        // Show confirmation dialog
+        const confirmed = confirm('Are you sure you want to delete this note? This action cannot be undone.');
+        if (!confirmed) return;
+
+        try {
+          const res = await apiCall(`/api/members/${this.member.id}/notes/${note.id || index}`, {
+            method: 'DELETE'
+          });
+
+          if (res.ok) {
+            // Remove note from local array immediately for better UX
+            this.member.notes.splice(index, 1);
+            Alpine.store('toastStore')?.add('Note deleted successfully!', 'success');
+
+            // Adjust pagination if needed
+            const totalPages = Math.ceil(this.member.notes.length / 25);
+            if (this.notesPage >= totalPages && totalPages > 0) {
+              this.notesPage = totalPages - 1;
+            }
+          } else {
+            const error = await res.json();
+            Alpine.store('toastStore')?.add('Error deleting note: ' + (error.detail || 'Unknown error'), 'error');
+          }
+        } catch (error) {
+          console.error('Error deleting note:', error);
+          Alpine.store('toastStore')?.add('Error deleting note. Please try again.', 'error');
+        }
+      },
+      formatTime(dateString) {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        return date.toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true
+        });
       }
     }));
   });
