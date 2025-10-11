@@ -1,0 +1,18 @@
+As a professional software developer with 10 years in the industry. make sure you follow industry best practices, naming convention with regards to python, mongo db, fast api, SOLID principles and OOP principles.
+
+-   Write short docstrings
+-   use type hinting. prefer list over List, int | None over Optional[int] or Union[int, None]
+-   use ruff and black for formatting
+-   put related models in the same file e.g. users.py
+-   put unrelated models in different files e.g. user.py
+-   use the repository pattern.
+-   repositories should only do database handling
+-   services should call repositories
+-   add unit tests for every function / class / methods
+-   use template design from https://dash-template.webflow.io/dashboard-variants/default always
+-   use url_for instead of hardcoded paths
+-   use logging extensively
+-   use security best practices
+-   all logging should use % substitution instead of f formatting
+-   Follow DRY (Don't repeat yourself) principles
+-   use factories to generate data

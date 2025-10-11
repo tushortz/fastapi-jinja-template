@@ -1,0 +1,385 @@
+{% extends "base.html" %}
+
+{% block title %}Church Management Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <!-- Welcome Section -->
+  <div class="bg-white overflow-hidden shadow rounded-lg">
+    <div class="px-4 py-5 sm:p-6">
+      <div class="flex items-center">
+        <div class="flex-shrink-0">
+          <i class="fas fa-church text-blue-600 text-3xl"></i>
+        </div>
+        <div class="ml-5 w-0 flex-1">
+          <dl>
+            <dt class="text-sm font-medium text-gray-500 truncate">
+              Welcome back, {{ user.username }}!
+            </dt>
+            <dd class="text-lg font-medium text-gray-900">
+              Manage your church members, track attendance, and organize activities
+            </dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Stats Cards -->
+  <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4" x-data="dashboardStats">
+    <div class="bg-white overflow-hidden shadow rounded-lg">
+      <div class="p-5">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <i class="fas fa-users text-blue-600 text-2xl"></i>
+          </div>
+          <div class="ml-5 w-0 flex-1">
+            <dl>
+              <dt class="text-sm font-medium text-gray-500 truncate">
+                Total Members
+              </dt>
+              <dd class="text-lg font-medium text-gray-900" x-text="memberStats.total_members || 0">
+                0
+              </dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white overflow-hidden shadow rounded-lg">
+      <div class="p-5">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <i class="fas fa-clipboard-check text-green-600 text-2xl"></i>
+          </div>
+          <div class="ml-5 w-0 flex-1">
+            <dl>
+              <dt class="text-sm font-medium text-gray-500 truncate">
+                Attendance Rate
+              </dt>
+              <dd class="text-lg font-medium text-gray-900" x-text="(attendanceStats.attendance_rate || 0) + '%'">
+                0%
+              </dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white overflow-hidden shadow rounded-lg">
+      <div class="p-5">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <i class="fas fa-calendar text-purple-600 text-2xl"></i>
+          </div>
+          <div class="ml-5 w-0 flex-1">
+            <dl>
+              <dt class="text-sm font-medium text-gray-500 truncate">
+                Upcoming Events
+              </dt>
+              <dd class="text-lg font-medium text-gray-900" x-text="eventStats.upcoming_count || 0">
+                0
+              </dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white overflow-hidden shadow rounded-lg">
+      <div class="p-5">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <i class="fas fa-birthday-cake text-yellow-600 text-2xl"></i>
+          </div>
+          <div class="ml-5 w-0 flex-1">
+            <dl>
+              <dt class="text-sm font-medium text-gray-500 truncate">
+                Birthdays Today
+              </dt>
+              <dd class="text-lg font-medium text-gray-900" x-text="memberStats.birthdays_today || 0">
+                0
+              </dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="bg-white shadow rounded-lg">
+    <div class="px-4 py-5 sm:p-6">
+      <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">
+        Quick Actions
+      </h3>
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <a href="{{ url_for('create_member_form') }}"
+          class="relative group bg-white p-6 focus-within:ring-2 focus-within:ring-inset focus-within:ring-blue-500 rounded-lg border border-gray-300 hover:border-gray-400 transition-colors">
+          <div>
+            <span class="rounded-lg inline-flex p-3 bg-blue-50 text-blue-700 ring-4 ring-white">
+              <i class="fas fa-user-plus text-xl"></i>
+            </span>
+          </div>
+          <div class="mt-4">
+            <h3 class="text-lg font-medium">
+              <span class="absolute inset-0" aria-hidden="true"></span>
+              Add Member
+            </h3>
+            <p class="mt-2 text-sm text-gray-500">
+              Register a new church member
+            </p>
+          </div>
+        </a>
+
+        <a href="{{ url_for('create_attendance_form') }}"
+          class="relative group bg-white p-6 focus-within:ring-2 focus-within:ring-inset focus-within:ring-green-500 rounded-lg border border-gray-300 hover:border-gray-400 transition-colors">
+          <div>
+            <span class="rounded-lg inline-flex p-3 bg-green-50 text-green-700 ring-4 ring-white">
+              <i class="fas fa-clipboard-check text-xl"></i>
+            </span>
+          </div>
+          <div class="mt-4">
+            <h3 class="text-lg font-medium">
+              <span class="absolute inset-0" aria-hidden="true"></span>
+              Record Attendance
+            </h3>
+            <p class="mt-2 text-sm text-gray-500">
+              Mark attendance for services
+            </p>
+          </div>
+        </a>
+
+        <a href="{{ url_for('create_event_form') }}"
+          class="relative group bg-white p-6 focus-within:ring-2 focus-within:ring-inset focus-within:ring-purple-500 rounded-lg border border-gray-300 hover:border-gray-400 transition-colors">
+          <div>
+            <span class="rounded-lg inline-flex p-3 bg-purple-50 text-purple-700 ring-4 ring-white">
+              <i class="fas fa-calendar-plus text-xl"></i>
+            </span>
+          </div>
+          <div class="mt-4">
+            <h3 class="text-lg font-medium">
+              <span class="absolute inset-0" aria-hidden="true"></span>
+              Schedule Event
+            </h3>
+            <p class="mt-2 text-sm text-gray-500">
+              Plan church events and activities
+            </p>
+          </div>
+        </a>
+
+        <a href="{{ url_for('members_list') }}"
+          class="relative group bg-white p-6 focus-within:ring-2 focus-within:ring-inset focus-within:ring-yellow-500 rounded-lg border border-gray-300 hover:border-gray-400 transition-colors">
+          <div>
+            <span class="rounded-lg inline-flex p-3 bg-yellow-50 text-yellow-700 ring-4 ring-white">
+              <i class="fas fa-users text-xl"></i>
+            </span>
+          </div>
+          <div class="mt-4">
+            <h3 class="text-lg font-medium">
+              <span class="absolute inset-0" aria-hidden="true"></span>
+              View Members
+            </h3>
+            <p class="mt-2 text-sm text-gray-500">
+              Browse all church members
+            </p>
+          </div>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Activity -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Recent Members -->
+    <div class="bg-white shadow rounded-lg">
+      <div class="px-4 py-5 sm:p-6">
+        <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">
+          Recent Members
+        </h3>
+        <div class="space-y-3" x-data="recentMembers">
+          <div x-show="loading" class="text-center py-4">
+            <i class="fas fa-spinner fa-spin text-gray-400"></i>
+            <p class="text-sm text-gray-500 mt-2">Loading...</p>
+          </div>
+          <div x-show="!loading && members.length === 0" class="text-center py-4">
+            <i class="fas fa-users text-gray-400 text-2xl"></i>
+            <p class="text-sm text-gray-500 mt-2">No members found</p>
+          </div>
+          <template x-for="member in members" :key="member.id">
+            <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+              <div class="flex-shrink-0">
+                <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                  <i class="fas fa-user text-white text-sm"></i>
+                </div>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium text-gray-900" x-text="member.first_name + ' ' + (member.last_name || '')"></p>
+                <p class="text-xs text-gray-500" x-text="member.role ? member.role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Member'"></p>
+              </div>
+              <div class="flex-shrink-0">
+                <a :href="'/members/' + member.id + '/view'" class="text-blue-600 hover:text-blue-800">
+                  <i class="fas fa-eye"></i>
+                </a>
+              </div>
+            </div>
+          </template>
+        </div>
+        <div class="mt-4">
+          <a href="{{ url_for('members_list') }}" class="text-sm text-blue-600 hover:text-blue-800">
+            View all members →
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Upcoming Events -->
+    <div class="bg-white shadow rounded-lg">
+      <div class="px-4 py-5 sm:p-6">
+        <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">
+          Upcoming Events
+        </h3>
+        <div class="space-y-3" x-data="upcomingEvents">
+          <div x-show="loading" class="text-center py-4">
+            <i class="fas fa-spinner fa-spin text-gray-400"></i>
+            <p class="text-sm text-gray-500 mt-2">Loading...</p>
+          </div>
+          <div x-show="!loading && events.length === 0" class="text-center py-4">
+            <i class="fas fa-calendar text-gray-400 text-2xl"></i>
+            <p class="text-sm text-gray-500 mt-2">No upcoming events</p>
+          </div>
+          <template x-if="!loading && nextEvent">
+            <div class="p-4 mb-2 rounded-lg border border-purple-200 bg-purple-50">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                  <div class="w-9 h-9 bg-purple-500 rounded-full flex items-center justify-center">
+                    <i class="fas fa-bolt text-white text-sm"></i>
+                  </div>
+                  <div>
+                    <p class="text-sm font-semibold text-purple-800" x-text="nextEvent.title"></p>
+                    <p class="text-xs text-purple-700" x-text="formatDate(nextEvent.start_date)"></p>
+                  </div>
+                </div>
+                <a :href="'/dashboard/events/' + nextEvent.id + '/view'" class="text-purple-700 hover:text-purple-900 text-sm font-medium">
+                  View <i class="fas fa-arrow-right ml-1 text-xs"></i>
+                </a>
+              </div>
+            </div>
+          </template>
+          <template x-for="event in events" :key="event.id">
+            <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+              <div class="flex-shrink-0">
+                <div class="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+                  <i class="fas fa-calendar text-white text-sm"></i>
+                </div>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium text-gray-900" x-text="event.title"></p>
+                <p class="text-xs text-gray-500" x-text="formatDate(event.start_date)"></p>
+              </div>
+              <div class="flex-shrink-0">
+                <a :href="'/dashboard/events/' + event.id + '/view'" class="text-purple-600 hover:text-purple-800">
+                  <i class="fas fa-eye"></i>
+                </a>
+              </div>
+            </div>
+          </template>
+        </div>
+        <div class="mt-4">
+          <a href="{{ url_for('events_list') }}" class="text-sm text-purple-600 hover:text-purple-800">
+            View all events →
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Load dashboard stats and data
+  document.addEventListener('alpine:init', () => {
+    Alpine.data('dashboardStats', () => ({
+      memberStats: {},
+      attendanceStats: {},
+      eventStats: {},
+
+      async init() {
+        await this.loadStats();
+      },
+
+      async loadStats() {
+        try {
+          // Load member statistics
+          const memberResponse = await apiCall('/members/statistics');
+          if (memberResponse.ok) {
+            this.memberStats = await memberResponse.json();
+          }
+
+          // Load attendance statistics
+          const attendanceResponse = await apiCall('/attendance/statistics');
+          if (attendanceResponse.ok) {
+            this.attendanceStats = await attendanceResponse.json();
+          }
+
+          // Load event statistics (cookie-auth UI endpoint)
+          const eventResponse = await apiCall('/dashboard/events/statistics-json');
+          if (eventResponse.ok) {
+            this.eventStats = await eventResponse.json();
+          }
+        } catch (error) {
+          console.error('Error loading dashboard stats:', error);
+        }
+      }
+    }));
+
+    Alpine.data('recentMembers', () => ({
+      members: [],
+      loading: true,
+
+      async init() {
+        await this.loadRecentMembers();
+      },
+
+      async loadRecentMembers() {
+        try {
+          const response = await apiCall('/members/?limit=5');
+          if (response.ok) {
+            this.members = await response.json();
+          }
+        } catch (error) {
+          console.error('Error loading recent members:', error);
+        } finally {
+          this.loading = false;
+        }
+      }
+    }));
+
+    Alpine.data('upcomingEvents', () => ({
+      events: [],
+      loading: true,
+      nextEvent: null,
+
+      async init() {
+        await this.loadUpcomingEvents();
+      },
+
+      async loadUpcomingEvents() {
+        try {
+          // Use cookie-auth UI JSON endpoint to avoid token requirement
+          const response = await apiCall('/dashboard/events/upcoming-json?limit=5');
+          if (response.ok) {
+            this.events = await response.json();
+            this.nextEvent = this.events && this.events.length > 0 ? this.events[0] : null;
+          }
+        } catch (error) {
+          console.error('Error loading upcoming events:', error);
+        } finally {
+          this.loading = false;
+        }
+      }
+    }));
+  });
+</script>
+{% endblock %}

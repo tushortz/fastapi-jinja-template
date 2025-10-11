@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}Today's Events - Church Management{% endblock %}
+{% block page_title %}Today's Events{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <div class="bg-white shadow rounded-lg">
+    <div class="px-4 py-5 sm:p-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900">Today's Events</h1>
+          <p class="mt-1 text-sm text-gray-500">All events scheduled for today</p>
+        </div>
+        <a href="{{ url_for('events_list') }}"
+           class="text-purple-600 hover:text-purple-800 text-sm font-medium">
+          <i class="fas fa-list mr-1"></i>All Events
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-white shadow rounded-lg">
+    <div class="px-4 py-5 sm:p-6" x-data="todayEvents()">
+      <div x-show="loading" class="text-center py-8">
+        <i class="fas fa-spinner fa-spin text-gray-400 text-2xl"></i>
+        <p class="text-sm text-gray-500 mt-2">Loading events...</p>
+      </div>
+
+      <div x-show="!loading && events.length === 0" class="text-center py-8">
+        <i class="fas fa-calendar-day text-gray-400 text-4xl"></i>
+        <h3 class="mt-2 text-sm font-medium text-gray-900">No events today</h3>
+        <p class="mt-1 text-sm text-gray-500">You can schedule a new event.</p>
+        <div class="mt-6">
+          <a href="{{ url_for('create_event_form') }}"
+             class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700">
+            <i class="fas fa-plus mr-2"></i>Add Event
+          </a>
+        </div>
+      </div>
+
+      <div x-show="!loading && events.length > 0" class="space-y-4">
+        <template x-for="event in events" :key="event.id">
+          <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
+            <div class="flex items-center justify-between">
+              <div class="flex-1 min-w-0">
+                <h3 class="text-lg font-medium text-gray-900" x-text="event.title"></h3>
+                <div class="mt-1 flex items-center space-x-4 text-sm text-gray-500">
+                  <span class="flex items-center">
+                    <i class="fas fa-clock mr-1"></i>
+                    <span x-text="event.start_time || 'All day'"></span>
+                  </span>
+                  <span x-show="event.location" class="flex items-center">
+                    <i class="fas fa-map-marker-alt mr-1"></i>
+                    <span x-text="event.location"></span>
+                  </span>
+                </div>
+              </div>
+              <div class="flex items-center space-x-2">
+                <a :href="'/dashboard/events/' + event.id + '/view'"
+                   class="text-purple-600 hover:text-purple-800 text-sm font-medium">
+                  <i class="fas fa-eye mr-1"></i>View
+                </a>
+              </div>
+            </div>
+          </div>
+        </template>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function todayEvents() {
+    return {
+      events: [],
+      loading: true,
+      async init() {
+        await this.load();
+      },
+      async load() {
+        this.loading = true;
+        try {
+          const response = await apiCall('/api/events/today');
+          if (response.ok) {
+            this.events = await response.json();
+          }
+        } catch (e) {
+          console.error('Error loading today\'s events', e);
+        } finally {
+          this.loading = false;
+        }
+      }
+    }
+  }
+</script>
+{% endblock %}
+
+

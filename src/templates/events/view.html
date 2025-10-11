@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}View Event - Church Management{% endblock %}
+{% block page_title %}View Event{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto" x-data="eventView('{{ event_id }}')">
+  <div class="bg-white shadow rounded-lg">
+    <div class="px-4 py-5 sm:p-6">
+      <template x-if="loading">
+        <div class="text-center py-8">
+          <i class="fas fa-spinner fa-spin text-gray-400 text-2xl"></i>
+          <p class="text-sm text-gray-500 mt-2">Loading event...</p>
+        </div>
+      </template>
+
+      <template x-if="!loading && event">
+        <div>
+          <div class="flex items-start justify-between">
+            <div>
+              <h1 class="text-2xl font-bold text-gray-900" x-text="event.title"></h1>
+              <p class="mt-1 text-sm text-gray-500" x-text="event.description"></p>
+            </div>
+            <div>
+              <a :href="'/dashboard/events/' + event.id + '/edit'"
+                 class="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">
+                <i class="fas fa-edit mr-2"></i>Edit
+              </a>
+            </div>
+          </div>
+
+          <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="space-y-2">
+              <div class="text-sm text-gray-600"><i class="fas fa-calendar-day mr-2"></i><span x-text="formatDate(event.start_date)"></span></div>
+              <div class="text-sm text-gray-600" x-show="event.end_date"><i class="fas fa-calendar-check mr-2"></i><span x-text="formatDate(event.end_date)"></span></div>
+              <div class="text-sm text-gray-600" x-show="event.start_time"><i class="fas fa-clock mr-2"></i><span x-text="event.start_time"></span></div>
+              <div class="text-sm text-gray-600" x-show="event.end_time"><i class="fas fa-clock mr-2"></i><span x-text="event.end_time"></span></div>
+            </div>
+            <div class="space-y-2">
+              <div class="text-sm text-gray-600" x-show="event.location"><i class="fas fa-map-marker-alt mr-2"></i><span x-text="event.location"></span></div>
+              <div class="text-sm text-gray-600"><i class="fas fa-palette mr-2"></i><span x-text="event.color"></span></div>
+              <div class="text-sm text-gray-600"><i class="fas fa-users mr-2"></i><span x-text="event.is_public ? 'Public' : 'Private'"></span></div>
+              <div class="text-sm text-gray-600"><i class="fas fa-day mr-2"></i><span x-text="event.is_all_day ? 'All day' : 'Timed'"></span></div>
+            </div>
+          </div>
+        </div>
+      </template>
+
+      <template x-if="!loading && !event">
+        <div class="text-center py-8">
+          <i class="fas fa-exclamation-circle text-gray-400 text-2xl"></i>
+          <p class="text-sm text-gray-500 mt-2">Event not found.</p>
+        </div>
+      </template>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('alpine:init', () => {
+    Alpine.data('eventView', (eventId) => ({
+      loading: true,
+      event: null,
+      async init() {
+        try {
+          const res = await apiCall(`/api/events/${eventId}`);
+          if (res.ok) {
+            this.event = await res.json();
+          }
+        } catch (e) {
+          console.error('Error loading event', e);
+        } finally {
+          this.loading = false;
+        }
+      }
+    }));
+  });
+</script>
+{% endblock %}
+
+

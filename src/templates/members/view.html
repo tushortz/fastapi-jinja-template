@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+
+{% block title %}View Member{% endblock %}
+{% block page_title %}Member Details{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto" x-data="memberView('{{ member_id }}')">
+  <div class="bg-white shadow rounded-lg">
+    <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+      <h1 class="text-2xl font-bold text-gray-900">Member Details</h1>
+      <a href="{{ url_for('members_list') }}" class="text-gray-600 hover:text-gray-800"><i class="fas fa-arrow-left mr-2"></i>Back to Members</a>
+    </div>
+    <div class="p-6">
+      <div x-show="loading" class="text-center py-8">
+        <i class="fas fa-spinner fa-spin text-gray-400 text-2xl"></i>
+        <p class="text-sm text-gray-500 mt-2">Loading member...</p>
+      </div>
+
+      <template x-if="!loading && member">
+        <div class="space-y-6">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+            <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
+              <i class="fas fa-user text-blue-600 text-2xl"></i>
+            </div>
+            <div>
+              <h2 class="text-xl font-semibold text-gray-900" x-text="member.first_name + ' ' + (member.last_name || '')"></h2>
+              <p class="text-sm text-gray-500" x-text="(member.role || 'member').replace('_',' ').replace(/\b\w/g, l => l.toUpperCase())"></p>
+            </div>
+            </div>
+            <div class="flex items-center space-x-2">
+              <button @click="openInsights()" class="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-purple-600 rounded-md hover:bg-purple-700">
+                <i class="fas fa-magic mr-2"></i>AI Insight
+              </button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Contact -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-500 uppercase tracking-wide">Contact</h3>
+              <div class="mt-2 space-y-2 text-sm text-gray-700">
+                <div class="flex items-center" x-show="member.email"><i class="fas fa-envelope mr-2 text-gray-400"></i><span x-text="member.email"></span></div>
+                <div class="flex items-center" x-show="member.phone"><i class="fas fa-phone mr-2 text-gray-400"></i><span x-text="member.phone"></span></div>
+                <div class="flex items-start" x-show="member.address || member.city || member.state || member.zip_code || member.country">
+                  <i class="fas fa-map-marker-alt mr-2 text-gray-400 mt-0.5"></i>
+                  <span x-text="[member.address, member.city, member.state, member.zip_code, member.country].filter(Boolean).join(', ')"></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Church Info -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-500 uppercase tracking-wide">Church</h3>
+              <div class="mt-2 space-y-2 text-sm text-gray-700">
+                <div class="flex items-center"><i class="fas fa-id-badge mr-2 text-gray-400"></i><span x-text="(member.status || '').replace('_',' ').replace(/\b\w/g, l => l.toUpperCase())"></span></div>
+                <div class="flex items-center" x-show="member.membership_date"><i class="fas fa-calendar-plus mr-2 text-gray-400"></i><span x-text="formatDate(member.membership_date)"></span></div>
+                <div class="flex items-center" x-show="member.baptism_date"><i class="fas fa-tint mr-2 text-gray-400"></i><span x-text="formatDate(member.baptism_date)"></span></div>
+                <div class="flex items-center" x-show="member.ministry"><i class="fas fa-people-group mr-2 text-gray-400"></i><span x-text="member.ministry.replace('_',' ').replace(/\b\w/g, l => l.toUpperCase())"></span></div>
+                <div class="flex items-center" x-show="member.first_attended"><i class="fas fa-calendar-check mr-2 text-gray-400"></i><span x-text="formatDate(member.first_attended)"></span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Personal Details -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h3 class="text-sm font-medium text-gray-500 uppercase tracking-wide">Personal</h3>
+              <div class="mt-2 space-y-2 text-sm text-gray-700">
+                <div class="flex items-center" x-show="member.date_of_birth"><i class="fas fa-cake-candles mr-2 text-gray-400"></i><span x-text="formatDate(member.date_of_birth)"></span></div>
+                <div class="flex items-center" x-show="member.gender"><i class="fas fa-venus-mars mr-2 text-gray-400"></i><span x-text="member.gender.replace('_',' ').replace(/\b\w/g, l => l.toUpperCase())"></span></div>
+                <div class="flex items-center" x-show="member.marital_status"><i class="fas fa-ring mr-2 text-gray-400"></i><span x-text="member.marital_status.replace('_',' ').replace(/\b\w/g, l => l.toUpperCase())"></span></div>
+              </div>
+            </div>
+            <div>
+              <h3 class="text-sm font-medium text-gray-500 uppercase tracking-wide">Professional</h3>
+              <div class="mt-2 space-y-2 text-sm text-gray-700">
+                <div class="flex items-center" x-show="member.occupation"><i class="fas fa-briefcase mr-2 text-gray-400"></i><span x-text="member.occupation"></span></div>
+                <div class="flex items-center" x-show="member.employer"><i class="fas fa-building mr-2 text-gray-400"></i><span x-text="member.employer"></span></div>
+                <div class="flex items-center" x-show="member.education_level"><i class="fas fa-graduation-cap mr-2 text-gray-400"></i><span x-text="member.education_level"></span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Emergency Contact -->
+          <div x-show="member.emergency_contact_name || member.emergency_contact_phone || member.emergency_contact_relationship">
+            <h3 class="text-sm font-medium text-gray-500 uppercase tracking-wide">Emergency Contact</h3>
+            <div class="mt-2 space-y-2 text-sm text-gray-700">
+              <div class="flex items-center" x-show="member.emergency_contact_name"><i class="fas fa-user-shield mr-2 text-gray-400"></i><span x-text="member.emergency_contact_name"></span></div>
+              <div class="flex items-center" x-show="member.emergency_contact_phone"><i class="fas fa-phone mr-2 text-gray-400"></i><span x-text="member.emergency_contact_phone"></span></div>
+              <div class="flex items-center" x-show="member.emergency_contact_relationship"><i class="fas fa-hand-holding-heart mr-2 text-gray-400"></i><span x-text="member.emergency_contact_relationship"></span></div>
+            </div>
+          </div>
+
+          <!-- Notes -->
+          <div x-show="member.notes && (Array.isArray(member.notes) ? member.notes.length > 0 : String(member.notes).trim().length > 0)" class="mt-2">
+            <h3 class="text-sm font-medium text-gray-500 uppercase tracking-wide">Notes</h3>
+            <div class="mt-2 space-y-2 text-sm text-gray-700">
+              <template x-if="Array.isArray(member.notes)">
+                <ul class="list-disc pl-6 space-y-1">
+                  <template x-for="(n, i) in member.notes" :key="i">
+                    <li x-text="n.note || n"></li>
+                  </template>
+                </ul>
+              </template>
+              <template x-if="!Array.isArray(member.notes)">
+                <p x-text="member.notes"></p>
+              </template>
+            </div>
+          </div>
+
+          <!-- Meta -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h3 class="text-sm font-medium text-gray-500 uppercase tracking-wide">Meta</h3>
+              <div class="mt-2 space-y-2 text-sm text-gray-700">
+                <div class="flex items-center"><i class="fas fa-toggle-on mr-2 text-gray-400"></i><span x-text="member.is_active ? 'Active' : 'Inactive'"></span></div>
+                <div class="flex items-center" x-show="member.created_at"><i class="fas fa-user-plus mr-2 text-gray-400"></i><span>Created <span x-text="formatDate(member.created_at)"></span></span></div>
+                <div class="flex items-center" x-show="member.updated_at"><i class="fas fa-edit mr-2 text-gray-400"></i><span>Updated <span x-text="formatDate(member.updated_at)"></span></span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </template>
+
+      <!-- AI Insight Modal -->
+      <div x-show="showInsights" class="fixed inset-0 z-50 flex items-center justify-center" style="display:none">
+        <div class="absolute inset-0 bg-black/50" @click="closeInsights()"></div>
+        <div class="relative bg-white rounded-xl shadow-2xl border border-purple-200 w-11/12 sm:w-11/12 md:w-5/6 lg:w-4/5 xl:w-3/4 max-w-5xl mx-4 sm:mx-6 max-h-[90vh] flex flex-col">
+          <!-- Header -->
+          <div class="bg-gradient-to-r from-purple-600 to-fuchsia-600 px-5 py-4 flex items-center justify-between">
+            <h3 class="text-base md:text-lg font-semibold text-white">AI Member Insight</h3>
+            <button @click="closeInsights()" class="text-white/90 hover:text-white"><i class="fas fa-times"></i></button>
+          </div>
+          <!-- Body -->
+          <div class="px-6 pt-6 pb-4 overflow-y-auto overflow-x-hidden max-h-[78vh] overscroll-contain">
+            <!-- Progress Bar -->
+            <div class="mb-6 overflow-x-hidden overflow-y-auto max-h-24 pr-1">
+              <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                <div class="h-3 bg-gradient-to-r from-purple-500 to-fuchsia-500 transition-all duration-300" :style="`width: ${progress}%`"></div>
+              </div>
+              <div class="mt-2 text-xs text-gray-600" x-text="`${progress}%`"></div>
+            </div>
+
+            <div class="pr-2 space-y-8 break-words overflow-x-hidden">
+              <div class="text-base md:text-lg leading-relaxed text-gray-900 whitespace-pre-wrap" x-show="insightLoading">
+                <i class="fas fa-spinner fa-spin mr-2 text-purple-600"></i>Generating insight...
+              </div>
+              <div class="prose max-w-none prose-p:mb-4 prose-p:pb-2 prose-li:my-2 prose-ul:my-3 prose-ol:my-3 text-lg md:text-xl leading-relaxed text-gray-900" x-show="!insightLoading" x-html="renderHtml(insightText)"></div>
+            </div>
+
+            <div class="mt-8 flex items-center justify-end">
+              <button @click="closeInsights()" class="px-4 py-2 text-sm md:text-base bg-purple-600 text-white rounded-md hover:bg-purple-700 shadow-sm">
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div x-show="!loading && !member" class="text-center py-8">
+        <i class="fas fa-exclamation-circle text-gray-400 text-2xl"></i>
+        <p class="text-sm text-gray-500 mt-2">Member not found.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('alpine:init', () => {
+    Alpine.data('memberView', (memberId) => ({
+      loading: true,
+      member: null,
+      showInsights: false,
+      insightText: '',
+      insightLoading: false,
+      progress: 0,
+      _progressTimer: null,
+      async init() {
+        try {
+          const res = await apiCall(`/api/members/${memberId}`);
+          if (res.ok) {
+            this.member = await res.json();
+          }
+        } catch (e) {
+          console.error('Error loading member', e);
+        } finally {
+          this.loading = false;
+        }
+      },
+      _startProgress(durationMs = 60000) {
+        this.progress = 0;
+        const start = Date.now();
+        if (this._progressTimer) {
+          clearInterval(this._progressTimer);
+        }
+        this._progressTimer = setInterval(() => {
+          const elapsed = Date.now() - start;
+          const pct = Math.floor((elapsed / durationMs) * 100);
+          // Cap at 99% until result is received
+          this.progress = Math.max(0, Math.min(99, pct));
+          if (this.progress >= 99) {
+            // Avoid runaway timers
+            clearInterval(this._progressTimer);
+            this._progressTimer = null;
+          }
+        }, 100);
+      },
+      async openInsights() {
+        if (!this.member) return;
+        this.showInsights = true;
+        this.insightLoading = true;
+        this.insightText = '';
+        this._startProgress(30000);
+        try {
+          const res = await apiCall(`{{ url_for('member_insight_api') }}`, { method: 'POST', body: JSON.stringify({ member: this.member }) });
+          if (res.ok) {
+            const data = await res.json();
+            this.insightText = data.insight || '';
+            this.progress = 100;
+          } else {
+            const err = await res.json();
+            this.insightText = err.detail || 'Failed to generate insight.';
+            this.progress = 100;
+          }
+        } catch (e) {
+          this.insightText = 'Error generating insight. Please try again.';
+          this.progress = 100;
+        } finally {
+          if (this._progressTimer) {
+            clearInterval(this._progressTimer);
+            this._progressTimer = null;
+          }
+          this.insightLoading = false;
+        }
+      },
+      closeInsights() {
+        this.showInsights = false;
+        if (this._progressTimer) {
+          clearInterval(this._progressTimer);
+          this._progressTimer = null;
+        }
+        this.progress = 0;
+      }
+    }));
+  });
+</script>
+{% endblock %}

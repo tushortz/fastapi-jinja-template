@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}Backup & Restore - Administration{% endblock %}
+{% block page_title %}Backup & Restore{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <div class="bg-white shadow rounded-lg">
+    <div class="px-6 py-4 border-b border-gray-200">
+      <h1 class="text-2xl font-bold text-gray-900">Database Backup & Restore</h1>
+      <p class="mt-1 text-sm text-gray-500">Download a full JSON backup or restore from a backup file.</p>
+    </div>
+    <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+      <!-- Backup -->
+      <div class="border border-gray-200 rounded-lg p-4">
+        <h2 class="text-lg font-semibold text-gray-900">Backup</h2>
+        <p class="text-sm text-gray-600 mt-1">Export all collections as a single JSON file.</p>
+        <div class="mt-4">
+          <a href="/admin/backup" target="_blank"
+             class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+            <i class="fas fa-download mr-2"></i>Download Backup
+          </a>
+        </div>
+      </div>
+
+      <!-- Restore -->
+      <div class="border border-gray-200 rounded-lg p-4" x-data="restoreForm()">
+        <h2 class="text-lg font-semibold text-gray-900">Restore</h2>
+        <p class="text-sm text-gray-600 mt-1">Upload a previously downloaded JSON backup.</p>
+        <form class="mt-4" @submit.prevent="submit">
+          <input type="file" id="backup_file" accept="application/json" @change="onFile" class="block w-full text-sm" />
+          <div class="mt-4 flex items-center space-x-2">
+            <button type="submit" :disabled="!file || loading"
+                    class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50">
+              <i class="fas fa-upload mr-2"></i><span x-text="loading ? 'Restoring...' : 'Restore' "></span>
+            </button>
+            <span class="text-sm text-gray-500" x-text="message"></span>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function restoreForm() {
+    return {
+      file: null,
+      loading: false,
+      message: '',
+      onFile(e) {
+        this.file = e.target.files[0] || null;
+      },
+      async submit() {
+        if (!this.file) return;
+        this.loading = true;
+        this.message = '';
+        try {
+          const form = new FormData();
+          form.append('file', this.file);
+          const res = await fetch('/admin/restore', { method: 'POST', body: form });
+          if (res.ok) {
+            this.message = 'Restore completed successfully';
+          } else {
+            const err = await res.json().catch(() => ({}));
+            this.message = 'Restore failed: ' + (err.detail || res.statusText);
+          }
+        } catch (e) {
+          this.message = 'Restore failed';
+        } finally {
+          this.loading = false;
+        }
+      }
+    }
+  }
+</script>
+{% endblock %}
+
+

@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+
+{% block title %}Create Event - Church Management{% endblock %}
+{% block page_title %}Create Event{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+  <div class="bg-white shadow rounded-lg">
+    <div class="px-4 py-5 sm:p-6">
+      <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-900">Create New Event</h1>
+        <p class="mt-1 text-sm text-gray-500">Add a new event to the church calendar</p>
+      </div>
+
+      <form x-data="eventForm" @submit.prevent="submitEvent">
+        <div class="space-y-6">
+          <!-- Basic Information -->
+          <div>
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Basic Information</h3>
+            <div class="grid grid-cols-1 gap-4">
+              <div>
+                <label for="title" class="block text-sm font-medium text-gray-700">Event Title *</label>
+                <input type="text"
+                       id="title"
+                       x-model="form.title"
+                       required
+                       class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500">
+              </div>
+
+              <div>
+                <label for="description" class="block text-sm font-medium text-gray-700">Description</label>
+                <textarea id="description"
+                          x-model="form.description"
+                          rows="3"
+                          class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"></textarea>
+              </div>
+
+              <!-- Status and Priority removed -->
+            </div>
+          </div>
+
+          <!-- Date and Time -->
+          <div>
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Date and Time</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label for="start_date" class="block text-sm font-medium text-gray-700">Start Date *</label>
+                <input type="date"
+                       id="start_date"
+                       x-model="form.start_date"
+                       required
+                       class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500">
+              </div>
+
+              <div>
+                <label for="end_date" class="block text-sm font-medium text-gray-700">End Date</label>
+                <input type="date"
+                       id="end_date"
+                       x-model="form.end_date"
+                       class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500">
+              </div>
+
+              <div>
+                <label for="start_time" class="block text-sm font-medium text-gray-700">Start Time</label>
+                <input type="time"
+                       id="start_time"
+                       x-model="form.start_time"
+                       class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500">
+              </div>
+
+              <div>
+                <label for="end_time" class="block text-sm font-medium text-gray-700">End Time</label>
+                <input type="time"
+                       id="end_time"
+                       x-model="form.end_time"
+                       class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500">
+              </div>
+            </div>
+
+            <div class="mt-4">
+              <label class="flex items-center">
+                <input type="checkbox"
+                       x-model="form.is_all_day"
+                       class="rounded border-gray-300 text-purple-600 shadow-sm focus:border-purple-300 focus:ring focus:ring-purple-200 focus:ring-opacity-50">
+                <span class="ml-2 text-sm text-gray-700">All day event</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Location -->
+          <div>
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Location</h3>
+            <div>
+              <label for="location" class="block text-sm font-medium text-gray-700">Location</label>
+              <input type="text"
+                     id="location"
+                     x-model="form.location"
+                     placeholder="e.g., Main Sanctuary, Fellowship Hall"
+                     class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500">
+            </div>
+          </div>
+
+          <!-- Additional Settings -->
+          <div>
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Additional Settings</h3>
+            <div class="space-y-4">
+              <div>
+                <label for="color" class="block text-sm font-medium text-gray-700">Event Color</label>
+                <input type="color"
+                       id="color"
+                       x-model="form.color"
+                       value="#3B82F6"
+                       class="mt-1 block w-20 h-10 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500">
+              </div>
+
+              <!-- Reminder removed -->
+
+              <div>
+                <label class="flex items-center">
+                  <input type="checkbox"
+                         x-model="form.is_public"
+                         class="rounded border-gray-300 text-purple-600 shadow-sm focus:border-purple-300 focus:ring focus:ring-purple-200 focus:ring-opacity-50">
+                  <span class="ml-2 text-sm text-gray-700">Public event (visible to all members)</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="mt-8 flex items-center justify-end space-x-3">
+          <a href="{{ url_for('events_list') }}"
+             class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500">
+            Cancel
+          </a>
+          <button type="submit"
+                  :disabled="loading"
+                  class="px-4 py-2 text-sm font-medium text-white bg-purple-600 border border-transparent rounded-md shadow-sm hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50">
+            <span x-show="!loading">Create Event</span>
+            <span x-show="loading">
+              <i class="fas fa-spinner fa-spin mr-2"></i>Creating...
+            </span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('alpine:init', () => {
+    Alpine.data('eventForm', () => ({
+      loading: false,
+      form: {
+        title: '',
+        description: '',
+        // status, priority, and reminder removed
+        start_date: '',
+        end_date: '',
+        start_time: '',
+        end_time: '',
+        is_all_day: false,
+        location: '',
+        color: '#3B82F6',
+        reminder_minutes: null,
+        is_public: true,
+        organizer_id: '{{ user.id }}'
+      },
+
+      async submitEvent() {
+        this.loading = true;
+        try {
+          // Clean up form data
+          const formData = { ...this.form };
+          if (!formData.end_date) delete formData.end_date;
+          if (!formData.start_time) delete formData.start_time;
+          if (!formData.end_time) delete formData.end_time;
+          if (!formData.location) delete formData.location;
+
+
+          const response = await apiCall('/api/events/', {
+            method: 'POST',
+            body: JSON.stringify(formData)
+          });
+
+          if (response.ok) {
+            const event = await response.json();
+            // Redirect to event list or view
+            window.location.href = '/dashboard/events/list';
+          } else {
+            const error = await response.json();
+            Alpine.store('toastStore')?.add('Error creating event: ' + (error.detail || 'Unknown error'), 'error');
+          }
+        } catch (error) {
+          console.error('Error creating event:', error);
+          Alpine.store('toastStore')?.add('Error creating event. Please try again.', 'error');
+        } finally {
+          this.loading = false;
+        }
+      }
+    }));
+  });
+</script>
+{% endblock %}

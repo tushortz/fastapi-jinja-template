@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - Church Management System{% endblock %}
+{% block page_title %}Administration{% endblock %}
+
+{% block content %}
+<!-- Include Modal Component -->
+{% include "components/modal.html" %}
+<div class="space-y-6" x-data="adminStats()" x-init="init()">
+
+  <!-- Admin Stats -->
+  <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+    <div class="bg-white overflow-hidden shadow rounded-lg">
+      <div class="p-5">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <i class="fas fa-user-check text-blue-600 text-2xl"></i>
+          </div>
+          <div class="ml-5 w-0 flex-1">
+            <dl>
+              <dt class="text-sm font-medium text-gray-500 truncate">
+                Active Users
+              </dt>
+              <dd class="text-lg font-medium text-gray-900" x-text="stats.activeUsers || 0" x-show="!loading">
+                0
+              </dd>
+              <dd class="text-lg font-medium text-gray-500" x-show="loading">
+                <i class="fas fa-spinner fa-spin"></i>
+              </dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white overflow-hidden shadow rounded-lg">
+      <div class="p-5">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <i class="fas fa-users text-green-600 text-2xl"></i>
+          </div>
+          <div class="ml-5 w-0 flex-1">
+            <dl>
+              <dt class="text-sm font-medium text-gray-500 truncate">
+                Total Members
+              </dt>
+              <dd class="text-lg font-medium text-gray-900" x-text="stats.totalMembers || 0" x-show="!loading">
+                0
+              </dd>
+              <dd class="text-lg font-medium text-gray-500" x-show="loading">
+                <i class="fas fa-spinner fa-spin"></i>
+              </dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white overflow-hidden shadow rounded-lg">
+      <div class="p-5">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <i class="fas fa-clipboard-check text-purple-600 text-2xl"></i>
+          </div>
+          <div class="ml-5 w-0 flex-1">
+            <dl>
+              <dt class="text-sm font-medium text-gray-500 truncate">
+                Attendance Records
+              </dt>
+              <dd class="text-lg font-medium text-gray-900" x-text="stats.totalAttendance || 0" x-show="!loading">
+                0
+              </dd>
+              <dd class="text-lg font-medium text-gray-500" x-show="loading">
+                <i class="fas fa-spinner fa-spin"></i>
+              </dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white overflow-hidden shadow rounded-lg">
+      <div class="p-5">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <i class="fas fa-calendar text-yellow-600 text-2xl"></i>
+          </div>
+          <div class="ml-5 w-0 flex-1">
+            <dl>
+              <dt class="text-sm font-medium text-gray-500 truncate">
+                Total Events
+              </dt>
+              <dd class="text-lg font-medium text-gray-900" x-text="stats.totalEvents || 0" x-show="!loading">
+                0
+              </dd>
+              <dd class="text-lg font-medium text-gray-500" x-show="loading">
+                <i class="fas fa-spinner fa-spin"></i>
+              </dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Admin Actions -->
+  <div class="bg-white shadow rounded-lg">
+    <div class="px-4 py-5 sm:p-6">
+      <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">
+        Admin Actions
+      </h3>
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <a href="{{ url_for('admin_users') }}"
+          class="relative group bg-white p-6 focus-within:ring-2 focus-within:ring-inset focus-within:ring-blue-500 rounded-lg border border-gray-300 hover:border-gray-400">
+          <div>
+            <span class="rounded-lg inline-flex p-3 bg-blue-50 text-blue-700 ring-4 ring-white">
+              <i class="fas fa-users text-xl"></i>
+            </span>
+          </div>
+          <div class="mt-4">
+            <h3 class="text-lg font-medium">
+              <span class="absolute inset-0" aria-hidden="true"></span>
+              Manage Users
+            </h3>
+            <p class="mt-2 text-sm text-gray-500">
+              View, edit, and manage user accounts
+            </p>
+          </div>
+        </a>
+
+        <a href="{{ url_for('members_list') }}"
+          class="relative group bg-white p-6 focus-within:ring-2 focus-within:ring-inset focus-within:ring-green-500 rounded-lg border border-gray-300 hover:border-gray-400">
+          <div>
+            <span class="rounded-lg inline-flex p-3 bg-green-50 text-green-700 ring-4 ring-white">
+              <i class="fas fa-users text-xl"></i>
+            </span>
+          </div>
+          <div class="mt-4">
+            <h3 class="text-lg font-medium">
+              <span class="absolute inset-0" aria-hidden="true"></span>
+              Manage Members
+            </h3>
+            <p class="mt-2 text-sm text-gray-500">
+              View and manage all church members
+            </p>
+          </div>
+        </a>
+
+        <a href="{{ url_for('attendance_list') }}"
+          class="relative group bg-white p-6 focus-within:ring-2 focus-within:ring-inset focus-within:ring-purple-500 rounded-lg border border-gray-300 hover:border-gray-400">
+          <div>
+            <span class="rounded-lg inline-flex p-3 bg-purple-50 text-purple-700 ring-4 ring-white">
+              <i class="fas fa-clipboard-check text-xl"></i>
+            </span>
+          </div>
+          <div class="mt-4">
+            <h3 class="text-lg font-medium">
+              <span class="absolute inset-0" aria-hidden="true"></span>
+              Attendance Records
+            </h3>
+            <p class="mt-2 text-sm text-gray-500">
+              View and manage attendance records
+            </p>
+          </div>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- System Information -->
+  <div class="bg-white shadow rounded-lg">
+    <div class="px-4 py-5 sm:p-6">
+      <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">
+        System Information
+      </h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <h4 class="text-sm font-medium text-gray-900 mb-2">Database Status</h4>
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <div class="w-3 h-3 bg-green-400 rounded-full"></div>
+            </div>
+            <span class="ml-2 text-sm text-gray-600">Connected</span>
+          </div>
+        </div>
+        <div>
+          <h4 class="text-sm font-medium text-gray-900 mb-2">Application Version</h4>
+          <p class="text-sm text-gray-600">Church Management System v1.0.0</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function adminStats() {
+    return {
+      stats: {
+        activeUsers: 0,
+        totalMembers: 0,
+        totalAttendance: 0,
+        totalActivities: 0
+      },
+      loading: true,
+      initialized: false,
+
+      async init() {
+        if (this.initialized) {
+          return;
+        }
+        this.initialized = true;
+        await this.loadStats();
+      },
+
+      async loadStats() {
+        this.loading = true;
+        try {
+          // Load user statistics
+          const userResponse = await apiCall('/admin/users/count');
+          if (userResponse.ok) {
+            const userData = await userResponse.json();
+            this.stats.activeUsers = userData.active_users || 0;
+          }
+
+          // Load member statistics
+          const memberResponse = await apiCall('/members/statistics');
+          if (memberResponse.ok) {
+            const memberData = await memberResponse.json();
+            this.stats.totalMembers = memberData.total_members || 0;
+          }
+
+          // Load attendance statistics
+          const attendanceResponse = await apiCall('/attendance/statistics');
+          if (attendanceResponse.ok) {
+            const attendanceData = await attendanceResponse.json();
+            this.stats.totalAttendance = attendanceData.total_records || 0;
+          }
+
+          // Load event statistics
+          const eventResponse = await apiCall('/api/events/statistics');
+          if (eventResponse.ok) {
+            const eventData = await eventResponse.json();
+            this.stats.totalEvents = eventData.total_count || 0;
+          }
+        } catch (error) {
+          console.error('Error loading admin statistics:', error);
+        } finally {
+          this.loading = false;
+        }
+      }
+    }
+  }
+</script>
+{% endblock %}
